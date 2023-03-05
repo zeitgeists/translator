@@ -1,1 +1,2 @@
 # translator
+studying translator implementation
