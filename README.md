@@ -6,7 +6,7 @@ studying translator implementation
 git clone git@github.com:zeitgeists/translator.git && \
 cd translator && \
 cmake -S . -B build && \
-cmake --build build && \
+cmake --build build
 ```
 
 # Run tests
