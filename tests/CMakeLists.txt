@@ -10,15 +10,16 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
-add_executable(
-    hello_test
-    tests.cpp
+file(GLOB all_SRCS
+    "${PROJECT_SOURCE_DIR}/tests/*.cpp"
 )
 
+add_executable(test_project ${all_SRCS})
+
 target_link_libraries(
-    hello_test
+    test_project
     GTest::gtest_main
 )
 
 include(GoogleTest)
-gtest_discover_tests(hello_test)
+gtest_discover_tests(test_project)
