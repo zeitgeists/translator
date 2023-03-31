@@ -3,18 +3,31 @@
 #include <iostream>
 
 static char ch;
-static std::fstream fin("/home/bluten/Projects/translator/input.txt", std::fstream::in);
+static std::fstream fin("E:/пр/1”нивер/система трансл€цiй/translator/input.txt", std::fstream::in);
 
-namespace Lexer {
 
-int ReadNextChar() {
-    // fin >> std::noskipws >> ch;
-    // std::cout << "Readed form file: " << ch << std::endl;
-    // return ch;
-    return getchar();
+double Lexer:: getNumVal() {
+    return NumVal;
+}
+std::string Lexer::getOperatorStr() {
+    return OperatorStr;
 }
 
-int gettok() {
+std::string Lexer::getIdentifierStr() {
+    return IdentifierStr;
+}
+
+int Lexer::ReadNextChar() {
+    // fin >> std::noskipws >> ch;
+     fin.get(ch);
+     if (fin.eof()) return EOF;
+     std::cout << "Readed form file: " << ch << std::endl;
+     return ch;
+    //return getchar();
+}
+
+int Lexer::gettok() {
+
     static int LastChar = ' ';
 
     // Skip any whitespace.
@@ -46,11 +59,13 @@ int gettok() {
     case '+':
     case '-':
         OperatorStr = LastChar;
+        LastChar = ReadNextChar();
         return tok_operator_1;
     case '*':
     case '/':
     case '%':
         OperatorStr = LastChar;
+        LastChar = ReadNextChar();
         return tok_operator_2;
     default:
         break;
@@ -73,4 +88,4 @@ int gettok() {
     LastChar = ReadNextChar();
     return ThisChar;
 }
-}
+

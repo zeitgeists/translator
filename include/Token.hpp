@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-enum Token {
+enum TokenId {
   tok_eof = -1,
 
   // commands
@@ -15,7 +15,6 @@ enum Token {
   tok_operator_1 = -6,
   tok_operator_2 = -7,
 };
+namespace Token {
 
-static std::string IdentifierStr;   // Filled in if tok_identifier
-static std::string OperatorStr;     // Filled in if tok_operator
-static double NumVal;               // Filled in if tok_number
+}

@@ -5,10 +5,14 @@
 #include "Lexer.hpp"
 #include "AST.hpp"
 
+static int CurTok;
+
 namespace Parser {
 
-static int CurTok;
+
 int getNextToken();
+
+int getCurTok();
 
 std::unique_ptr<ExprAST> LogError(std::string str);
 std::unique_ptr<PrototypeAST> LogErrorP(std::string str);

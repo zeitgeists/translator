@@ -1,10 +1,19 @@
 #include "Parser.hpp"
 #include <string>
 
+
+
+
 namespace Parser {
+    
+    int getCurTok() {
+        return CurTok;
+}
 
 int getNextToken() {
-    return CurTok = Lexer::gettok();
+     
+    CurTok = Lexer::gettok();
+    return  CurTok;
 }
 
 std::unique_ptr<ExprAST> LogError(std::string str) {
@@ -18,13 +27,14 @@ std::unique_ptr<PrototypeAST> LogErrorP(std::string str) {
 }
 
 std::unique_ptr<ExprAST> ParseNumberExpr() {
-    auto Result = std::make_unique<NumberExprAST>(NumVal);
+    double val = Lexer::getNumVal();
+    auto Result = std::make_unique<NumberExprAST>(val);
     getNextToken(); // consume the number
     return Result;
 }
 
 std::unique_ptr<ExprAST> ParseIdentifierExpr() {
-    std::string IdName = IdentifierStr;
+    std::string IdName = Lexer::getIdentifierStr();
 
     getNextToken(); // eat identifier.
 
@@ -51,9 +61,9 @@ std::unique_ptr<ExprAST> ParseIdentifierExpr() {
 }
 
 std::unique_ptr<ExprAST> ParseOperationTerm() {
-    LogError(OperatorStr);
-    LogError(IdentifierStr);
-    LogError(std::to_string(NumVal));
+   // LogError(Lexer::getOperatorStr());
+   // LogError(Lexer::getIdentifierStr());
+   // LogError(std::to_string(NumVal));
     switch (CurTok) {
     case tok_identifier:
         return ParseIdentifierExpr();
@@ -74,10 +84,11 @@ std::unique_ptr<ExprAST> ParseOperation() {
     auto LHS = ParseOperationTerm();
     if (!LHS) return nullptr;
 
-    getNextToken();
+    
     if (CurTok != tok_operator_1) return LHS;
 
-    std::string opStr = OperatorStr;
+    std::string opStr = Lexer::getOperatorStr();
+    getNextToken();//consume operator_1
     auto RHS = ParseOperationTerm();
     // Merge LHS/RHS.
     return std::make_unique<OperatorAST>(opStr, std::move(LHS), std::move(RHS));
@@ -92,18 +103,23 @@ std::unique_ptr<ExprAST> ParsePrimary() {
 }
 
 std::unique_ptr<ExprAST> ParseExpressionTail(std::unique_ptr<ExprAST> LHS) {
-    if (CurTok == ';' || CurTok == tok_eof) return LHS;
+    if (CurTok == ';' || CurTok == tok_eof){
+        
+        getNextToken();
+        return LHS;
+    }
     if (CurTok != tok_operator_2) return LogError("Expected OPERATOR_2 in EXPRESSION_TAIL");
 
-    std::string opStr = OperatorStr;
+    getNextToken();
+    std::string opStr = Lexer::getOperatorStr();
     auto RHS = ParsePrimary();
     if (!RHS) return nullptr;
 
     RHS = ParseExpressionTail(std::move(RHS));
 
     // Merge LHS/RHS.
-    LHS = std::make_unique<OperatorAST>(opStr, std::move(LHS), std::move(RHS));
-    return nullptr;
+    return std::make_unique<OperatorAST>(opStr, std::move(LHS), std::move(RHS));
+    
 }
 
 std::unique_ptr<ExprAST> ParseExpression() {

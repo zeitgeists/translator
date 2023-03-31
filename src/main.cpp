@@ -18,7 +18,7 @@ static void HandleTopLevelExpression() {
 static void MainLoop() {
   while (true) {
     fprintf(stderr, "$ ");
-    switch (Parser::CurTok) {
+    switch (Parser::getCurTok()) {
     case tok_eof:
       return;
     case ';': // ignore top-level semicolons.
