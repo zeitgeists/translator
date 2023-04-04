@@ -1,16 +1,21 @@
 #pragma once
 
 #include "Token.hpp"
-static std::string IdentifierStr;   // Filled in if tok_identifier
-static std::string OperatorStr;     // Filled in if tok_operator
-static double NumVal;               // Filled in if tok_number
+
+#include <list>
+#include <fstream>
+#include <iostream>
+#include <iomanip>
 
 namespace Lexer {
-// gettok - Return the next token from standard input.
-// returns tokens [0-255] if it is an unknown character
-int gettok();
-int ReadNextChar();
-double getNumVal();
-std::string getIdentifierStr();
-std::string getOperatorStr();
+    // gettok - Return the next token from standard input.
+    // returns tokens [0-255] if it is an unknown character
+    Token GetToken();
+    Token LogToken(Token &token);
+    Token MakeToken();
+    int ReadNextChar();
+    std::string TokenIdToStr(int id);
+    void PrintLoggedTokens();
 }
+
+static std::fstream fin("/home/bluten/Projects/translator/input.txt", std::fstream::in);

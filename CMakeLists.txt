@@ -18,8 +18,8 @@ include_directories(
 )
 
 file(GLOB all_SRCS
-    "${PROJECT_SOURCE_DIR}/src/*.cpp"
     "${PROJECT_SOURCE_DIR}/include/*.hpp"
+    "${PROJECT_SOURCE_DIR}/src/*.cpp"
 )
 
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)

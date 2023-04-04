@@ -1,33 +1,70 @@
 #include "Lexer.hpp"
-#include <fstream>
-#include <iostream>
+#include <iomanip>
 
-static char ch;
-static std::fstream fin("/home/bluten/Projects/translator/input.txt", std::fstream::in);
-
-
-double Lexer:: getNumVal() {
-    return NumVal;
-}
-std::string Lexer::getOperatorStr() {
-    return OperatorStr;
-}
-
-std::string Lexer::getIdentifierStr() {
-    return IdentifierStr;
-}
+std::list<Token> loggedTokens;
 
 int Lexer::ReadNextChar() {
     // fin >> std::noskipws >> ch;
-     fin.get(ch);
-     if (fin.eof()) return EOF;
-     std::cout << "Readed form file: " << ch << std::endl;
-     return ch;
+    char ch;
+    fin.get(ch);
+    if (fin.eof()) return EOF;
+    // std::cout << "Readed form file: " << ch << std::endl;
+    return ch;
     //return getchar();
 }
 
-int Lexer::gettok() {
+std::string Lexer::TokenIdToStr(int id) {
+    std::string str;
+    switch (id) {
+    case tok_eof:
+        str = "eof";
+        break;
+    case tok_def:
+        str = "def";
+        break;
+    case tok_extern:
+        str = "extern";
+        break;
+    case tok_identifier:
+        str = "identifier";
+        break;
+    case tok_number:
+        str = "number";
+        break;
+    case tok_operator_1:
+        str = "operator_1";
+        break;
+    case tok_operator_2:
+        str = "operator_2";
+        break;
+    default:
+        str = id;
+    }
+    return str;
+}
 
+void Lexer::PrintLoggedTokens() {
+    Token token;
+    std::cout << "    id    | identifier | operator | number\n";
+    while (!loggedTokens.empty()) {
+        token = loggedTokens.front();
+        loggedTokens.pop_front();
+        std::cout << std::right << std::setw(10) << TokenIdToStr(token.tokenId)
+            << "|" << std::setw(12) << token.identifierStr
+            << "|" << std::setw(10) << token.operatorStr
+            << "|" << std::setw(10) << token.numVal
+            << std::endl;
+    }
+}
+
+Token Lexer::GetToken() {
+    Token token = MakeToken();
+    loggedTokens.push_back(token);
+    return token;
+}
+
+Token Lexer::MakeToken() {
+    Token token;
     static int LastChar = ' ';
 
     // Skip any whitespace.
@@ -35,13 +72,18 @@ int Lexer::gettok() {
         LastChar = ReadNextChar();
 
     if (isalpha(LastChar)) { // identifier: [a-zA-Z][a-zA-Z0-9]*
-        IdentifierStr = LastChar;
+        token.identifierStr = LastChar;
         while (isalnum((LastChar = ReadNextChar())))
-            IdentifierStr += LastChar;
+            token.identifierStr += LastChar;
 
-        if (IdentifierStr == "def") return tok_def;
-        if (IdentifierStr == "extern") return tok_extern;
-        return tok_identifier;
+        if (token.identifierStr == "def") {
+            token.tokenId = tok_def;
+        } else if (token.identifierStr == "extern") {
+            token.tokenId = tok_extern;
+        } else {
+            token.tokenId = tok_identifier;
+        }
+        return token;
     }
 
     if (isdigit(LastChar) || LastChar == '.') {   // Number: [0-9.]+
@@ -51,22 +93,25 @@ int Lexer::gettok() {
             LastChar = ReadNextChar();
         } while (isdigit(LastChar) || LastChar == '.');
 
-        NumVal = strtod(NumStr.c_str(), 0);
-        return tok_number;
+        token.numVal = strtod(NumStr.c_str(), 0);
+        token.tokenId = tok_number;
+        return token;
     }
 
     switch(LastChar) {
     case '+':
     case '-':
-        OperatorStr = LastChar;
+        token.operatorStr = LastChar;
         LastChar = ReadNextChar();
-        return tok_operator_1;
+        token.tokenId = tok_operator_1;
+        return token;
     case '*':
     case '/':
     case '%':
-        OperatorStr = LastChar;
+        token.operatorStr = LastChar;
         LastChar = ReadNextChar();
-        return tok_operator_2;
+        token.tokenId = tok_operator_2;
+        return token;
     default:
         break;
     }
@@ -77,15 +122,17 @@ int Lexer::gettok() {
             LastChar = ReadNextChar();
         while (LastChar != EOF && LastChar != '\n' && LastChar != '\r');
 
-        if (LastChar != EOF) return gettok();
+        if (LastChar != EOF) return GetToken();
     }
 
     // Check for end of file.  Don't eat the EOF.
-    if (LastChar == EOF) return tok_eof;
+    if (LastChar == EOF) {
+        token.tokenId = tok_eof;
+        return token;
+    }
 
     // Otherwise, just return the character as its ascii value.
-    int ThisChar = LastChar;
+    token.tokenId = LastChar;
     LastChar = ReadNextChar();
-    return ThisChar;
+    return token;
 }
-

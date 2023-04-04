@@ -15,6 +15,14 @@ enum TokenId {
   tok_operator_1 = -6,
   tok_operator_2 = -7,
 };
-namespace Token {
 
-}
+struct Token {
+public:
+    int tokenId;
+    std::string identifierStr;   // Filled in if tok_identifier
+    std::string operatorStr;     // Filled in if tok_operator
+    double numVal;               // Filled in if tok_number
+    Token();
+    Token(const Token &token);
+    Token& operator=(const Token &token);
+};

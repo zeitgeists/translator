@@ -1,70 +1,62 @@
 #include "Parser.hpp"
 #include <string>
 
-
-
-
-namespace Parser {
-    
-    int getCurTok() {
-        return CurTok;
-}
-
-int getNextToken() {
-     
-    CurTok = Lexer::gettok();
-    return  CurTok;
-}
-
-std::unique_ptr<ExprAST> LogError(std::string str) {
+std::unique_ptr<ExprAST> Parser::LogError(std::string str) {
     fprintf(stderr, "Error: %s\n", str.c_str());
     return nullptr;
 }
 
-std::unique_ptr<PrototypeAST> LogErrorP(std::string str) {
+std::unique_ptr<PrototypeAST> Parser::LogErrorP(std::string str) {
     LogError(str);
     return nullptr;
 }
 
-std::unique_ptr<ExprAST> ParseNumberExpr() {
-    double val = Lexer::getNumVal();
-    auto Result = std::make_unique<NumberExprAST>(val);
-    getNextToken(); // consume the number
+Token Parser::GetCurrentToken() {
+    return currentToken;
+}
+
+void Parser::GetNextToken() {
+    currentToken = Lexer::GetToken();
+}
+
+std::unique_ptr<ExprAST> Parser::ParseNumberExpr() {
+    auto Result = std::make_unique<NumberExprAST>(currentToken.numVal);
+    GetNextToken(); // consume the number
     return Result;
 }
 
-std::unique_ptr<ExprAST> ParseIdentifierExpr() {
-    std::string IdName = Lexer::getIdentifierStr();
+std::unique_ptr<ExprAST> Parser::ParseIdentifierExpr() {
+    std::string IdName = currentToken.identifierStr;
 
-    getNextToken(); // eat identifier.
+    GetNextToken(); // eat identifier.
 
-    if (CurTok != '(') // Simple variable ref.
+    if (currentToken.tokenId != '(') // Simple variable ref.
         return std::make_unique<VariableExprAST>(IdName);
 
     // Call.
-    getNextToken(); // eat (
+    GetNextToken(); // eat (
     std::vector<std::unique_ptr<ExprAST>> Args;
-    if (CurTok != ')') {
+    if (currentToken.tokenId != ')') {
         while (true) {
             if (auto Arg = ParseExpression()) Args.push_back(std::move(Arg));
             else return nullptr;
-            if (CurTok == ')') break;
-            if (CurTok != ',') return LogError("Expected ')' or ',' in argument list");
-            getNextToken();
+            if (currentToken.tokenId == ')') break;
+            if (currentToken.tokenId != ',') return LogError("Expected ')' or ',' in argument list");
+            GetNextToken();
         }
     }
 
     // Eat the ')'.
-    getNextToken();
+    GetNextToken();
 
     return std::make_unique<CallExprAST>(IdName, std::move(Args));
 }
 
-std::unique_ptr<ExprAST> ParseOperationTerm() {
+std::unique_ptr<ExprAST> Parser::ParseOperationTerm() {
    // LogError(Lexer::getOperatorStr());
    // LogError(Lexer::getIdentifierStr());
    // LogError(std::to_string(NumVal));
-    switch (CurTok) {
+    switch (currentToken.tokenId) {
     case tok_identifier:
         return ParseIdentifierExpr();
     case tok_number:
@@ -74,44 +66,46 @@ std::unique_ptr<ExprAST> ParseOperationTerm() {
     }
 }
 
-std::unique_ptr<ExprAST> ParseOperation() {
-    if (CurTok == '(') {
-        getNextToken(); // consume '('
+std::unique_ptr<ExprAST> Parser::ParseOperation() {
+    if (currentToken.tokenId == '(') {
+        GetNextToken(); // consume '('
         auto result = ParseExpression();
-        getNextToken(); // consume ')'
+        GetNextToken(); // consume ')'
         return result;
     }
     auto LHS = ParseOperationTerm();
     if (!LHS) return nullptr;
 
-    
-    if (CurTok != tok_operator_1) return LHS;
 
-    std::string opStr = Lexer::getOperatorStr();
-    getNextToken();//consume operator_1
+    if (currentToken.tokenId != tok_operator_1) return LHS;
+
+    std::string opStr = currentToken.operatorStr;
+    GetNextToken();//consume operator_1
     auto RHS = ParseOperationTerm();
     // Merge LHS/RHS.
     return std::make_unique<OperatorAST>(opStr, std::move(LHS), std::move(RHS));
 }
 
-std::unique_ptr<ExprAST> ParsePrimary() {
-    if (CurTok == '-') {
+std::unique_ptr<ExprAST> Parser::ParsePrimary() {
+    if (currentToken.operatorStr == "-") {
         //TODO: add negation
         return LogError("negation not implemented yet");
     }
     return ParseOperation();
 }
 
-std::unique_ptr<ExprAST> ParseExpressionTail(std::unique_ptr<ExprAST> LHS) {
-    if (CurTok == ';' || CurTok == tok_eof){
-        
-        getNextToken();
+std::unique_ptr<ExprAST> Parser::ParseExpressionTail(std::unique_ptr<ExprAST> LHS) {
+    if (currentToken.tokenId == ';' || currentToken.tokenId == tok_eof){
+        GetNextToken();
         return LHS;
     }
-    if (CurTok != tok_operator_2) return LogError("Expected OPERATOR_2 in EXPRESSION_TAIL");
+    if (currentToken.tokenId != tok_operator_2) {
+        Lexer::PrintLoggedTokens();
+        return LogError("Expected OPERATOR_2 in EXPRESSION_TAIL");
+    }
 
-    getNextToken();
-    std::string opStr = Lexer::getOperatorStr();
+    GetNextToken();
+    std::string opStr = currentToken.operatorStr;
     auto RHS = ParsePrimary();
     if (!RHS) return nullptr;
 
@@ -119,17 +113,17 @@ std::unique_ptr<ExprAST> ParseExpressionTail(std::unique_ptr<ExprAST> LHS) {
 
     // Merge LHS/RHS.
     return std::make_unique<OperatorAST>(opStr, std::move(LHS), std::move(RHS));
-    
+
 }
 
-std::unique_ptr<ExprAST> ParseExpression() {
+std::unique_ptr<ExprAST> Parser::ParseExpression() {
     auto LHS = ParsePrimary();
     if (!LHS) return nullptr;
 
     return ParseExpressionTail(std::move(LHS));
 }
 
-std::unique_ptr<FunctionAST> ParseTopLevelExpr() {
+std::unique_ptr<FunctionAST> Parser::ParseTopLevelExpr() {
   if (auto E = ParseExpression()) {
     // Make an anonymous proto.
     auto Proto = std::make_unique<PrototypeAST>("__anonymous_expr",
@@ -137,5 +131,4 @@ std::unique_ptr<FunctionAST> ParseTopLevelExpr() {
     return std::make_unique<FunctionAST>(std::move(Proto), std::move(E));
   }
   return nullptr;
-}
 }
