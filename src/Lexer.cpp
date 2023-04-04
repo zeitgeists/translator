@@ -3,7 +3,7 @@
 #include <iostream>
 
 static char ch;
-static std::fstream fin("E:/пр/1”нивер/система трансл€цiй/translator/input.txt", std::fstream::in);
+static std::fstream fin("/home/bluten/Projects/translator/input.txt", std::fstream::in);
 
 
 double Lexer:: getNumVal() {
