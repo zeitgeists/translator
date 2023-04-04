@@ -70,16 +70,8 @@ std::unique_ptr<ExprAST> Parser::ParseOperation() {
         GetNextToken(); // consume ')'
         return result;
     }
-    auto LHS = ParseOperationTerm();
-    if (!LHS) return nullptr;
 
-    if (currentToken.tokenId != tok_operator_1) return LHS;
-
-    std::string opStr = currentToken.operatorStr;
-    GetNextToken(); //consume operator_1
-    auto RHS = ParseOperationTerm();
-    // Merge LHS/RHS.
-    return std::make_unique<OperatorAST>(opStr, std::move(LHS), std::move(RHS));
+    return ParseOperationTerm();
 }
 
 std::unique_ptr<ExprAST> Parser::ParsePrimary() {
@@ -87,7 +79,17 @@ std::unique_ptr<ExprAST> Parser::ParsePrimary() {
         //TODO: add negation
         return LogError("negation not implemented yet");
     }
-    return ParseOperation();
+
+    auto LHS = ParseOperation();
+    if (!LHS) return nullptr;
+
+    if (currentToken.tokenId != tok_operator_1) return LHS;
+
+    std::string opStr = currentToken.operatorStr;
+    GetNextToken(); //consume operator_1
+    auto RHS = ParseOperation();
+    // Merge LHS/RHS.
+    return std::make_unique<OperatorAST>(opStr, std::move(LHS), std::move(RHS));
 }
 
 std::unique_ptr<ExprAST> Parser::ParseExpressionTail(std::unique_ptr<ExprAST> LHS) {
