@@ -13,14 +13,14 @@ static void HandleTopLevelExpression() {
         Parser::GetNextToken();
         exit(1);
     }
-    Lexer::PrintLoggedTokens();
+    // Lexer::PrintLoggedTokens();
 }
 
 static void MainLoop() {
-    fprintf(stderr, "$ ");
+    fprintf(stderr, "$ \n");
     Parser::GetNextToken();
     while (true) {
-        fprintf(stderr, "$ ");
+        fprintf(stderr, "$ \n");
         switch (Parser::GetCurrentToken().tokenId) {
         case tok_eof:
             return;

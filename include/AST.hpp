@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 #include <string>
 #include <vector>
 #include <memory>
@@ -6,6 +7,7 @@
 // ExprAST - Base class for all expression nodes.
 class ExprAST {
 public:
+    virtual void ToStdOut(const std::string& prefix, bool isLeft);
     virtual ~ExprAST() = default;
 };
 
@@ -15,6 +17,7 @@ class NumberExprAST : public ExprAST {
 
 public:
     explicit NumberExprAST(double Val);
+    void ToStdOut(const std::string& prefix, bool isLeft) override;
 };
 
 // VariableExprAST - Expression class for referencing a variable, like "a".
@@ -23,6 +26,7 @@ class VariableExprAST : public ExprAST {
 
 public:
     explicit VariableExprAST(const std::string &Name);
+    void ToStdOut(const std::string& prefix, bool isLeft) override;
 };
 
 class OperatorAST : public ExprAST {
@@ -32,6 +36,7 @@ class OperatorAST : public ExprAST {
 public:
     OperatorAST(std::string Operator, std::unique_ptr<ExprAST> LHS,
                 std::unique_ptr<ExprAST> RHS);
+    void ToStdOut(const std::string& prefix, bool isLeft) override;
 };
 
 // CallExprAST - Expression class for function calls.
@@ -65,3 +70,7 @@ public:
     FunctionAST(std::unique_ptr<PrototypeAST> Prototype,
         std::unique_ptr<ExprAST> Body);
 };
+
+namespace AST {
+    void PrintAST(ExprAST* expr);
+}

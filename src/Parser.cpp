@@ -53,9 +53,6 @@ std::unique_ptr<ExprAST> Parser::ParseIdentifierExpr() {
 }
 
 std::unique_ptr<ExprAST> Parser::ParseOperationTerm() {
-   // LogError(Lexer::getOperatorStr());
-   // LogError(Lexer::getIdentifierStr());
-   // LogError(std::to_string(NumVal));
     switch (currentToken.tokenId) {
     case tok_identifier:
         return ParseIdentifierExpr();
@@ -76,11 +73,10 @@ std::unique_ptr<ExprAST> Parser::ParseOperation() {
     auto LHS = ParseOperationTerm();
     if (!LHS) return nullptr;
 
-
     if (currentToken.tokenId != tok_operator_1) return LHS;
 
     std::string opStr = currentToken.operatorStr;
-    GetNextToken();//consume operator_1
+    GetNextToken(); //consume operator_1
     auto RHS = ParseOperationTerm();
     // Merge LHS/RHS.
     return std::make_unique<OperatorAST>(opStr, std::move(LHS), std::move(RHS));
@@ -102,11 +98,12 @@ std::unique_ptr<ExprAST> Parser::ParseExpressionTail(std::unique_ptr<ExprAST> LH
     }
     if (currentToken.tokenId != tok_operator_2) {
         Lexer::PrintLoggedTokens();
+        LHS->ToStdOut("", false);
         return LogError("Expected OPERATOR_2 in EXPRESSION_TAIL");
     }
 
-    GetNextToken();
     std::string opStr = currentToken.operatorStr;
+    GetNextToken();
     auto RHS = ParsePrimary();
     if (!RHS) return nullptr;
 
@@ -129,6 +126,7 @@ std::unique_ptr<FunctionAST> Parser::ParseTopLevelExpr() {
     // Make an anonymous proto.
     auto Proto = std::make_unique<PrototypeAST>("__anonymous_expr",
                                                 std::vector<std::string>());
+    E->ToStdOut("", false);
     return std::make_unique<FunctionAST>(std::move(Proto), std::move(E));
   }
   return nullptr;
