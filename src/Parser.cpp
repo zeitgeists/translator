@@ -95,6 +95,7 @@ std::unique_ptr<ExprAST> Parser::ParsePrimary() {
 }
 
 std::unique_ptr<ExprAST> Parser::ParseExpressionTail(std::unique_ptr<ExprAST> LHS) {
+    if (currentToken.tokenId == ')') return LHS;
     if (currentToken.tokenId == ';' || currentToken.tokenId == tok_eof){
         GetNextToken();
         return LHS;
