@@ -4,10 +4,23 @@
 #include <vector>
 #include <memory>
 
+#include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/Constants.h"
+#include "llvm/IR/DerivedTypes.h"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Type.h"
+#include "llvm/IR/Verifier.h"
+
 // ExprAST - Base class for all expression nodes.
 class ExprAST {
 public:
     virtual void ToStdOut(const std::string& prefix, bool isLeft);
+    virtual llvm::Value *codegen() = 0;
     virtual ~ExprAST() = default;
 };
 
@@ -18,6 +31,7 @@ class NumberExprAST : public ExprAST {
 public:
     explicit NumberExprAST(double Val);
     void ToStdOut(const std::string& prefix, bool isLeft) override;
+    llvm::Value *codegen() override;
 };
 
 // VariableExprAST - Expression class for referencing a variable, like "a".
