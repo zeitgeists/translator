@@ -1,16 +1,6 @@
 #include "Parser.hpp"
 #include <string>
 
-std::unique_ptr<ExprAST> Parser::LogError(std::string str) {
-    fprintf(stderr, "Error: %s\n", str.c_str());
-    return nullptr;
-}
-
-std::unique_ptr<PrototypeAST> Parser::LogErrorP(std::string str) {
-    LogError(str);
-    return nullptr;
-}
-
 Token Parser::GetCurrentToken() {
     return currentToken;
 }
@@ -41,7 +31,7 @@ std::unique_ptr<ExprAST> Parser::ParseIdentifierExpr() {
             if (auto Arg = ParseExpression()) Args.push_back(std::move(Arg));
             else return nullptr;
             if (currentToken.tokenId == ')') break;
-            if (currentToken.tokenId != ',') return LogError("Expected ')' or ',' in argument list");
+            if (currentToken.tokenId != ',') return Logger::LogError("Expected ')' or ',' in argument list");
             GetNextToken();
         }
     }
@@ -59,7 +49,7 @@ std::unique_ptr<ExprAST> Parser::ParseOperationTerm() {
     case tok_number:
         return ParseNumberExpr();
     default:
-        return LogError("unknown token when expecting an OPERATION_TERM");
+        return Logger::LogError("unknown token when expecting an OPERATION_TERM");
     }
 }
 
@@ -77,7 +67,7 @@ std::unique_ptr<ExprAST> Parser::ParseOperation() {
 std::unique_ptr<ExprAST> Parser::ParsePrimary() {
     if (currentToken.operatorStr == "-") {
         //TODO: add negation
-        return LogError("negation not implemented yet");
+        return Logger::LogError("negation not implemented yet");
     }
 
     auto LHS = ParseOperation();
@@ -101,7 +91,7 @@ std::unique_ptr<ExprAST> Parser::ParseExpressionTail(std::unique_ptr<ExprAST> LH
     if (currentToken.tokenId != tok_operator_2) {
         Lexer::PrintLoggedTokens();
         LHS->ToStdOut("", false);
-        return LogError("Expected OPERATOR_2 in EXPRESSION_TAIL");
+        return Logger::LogError("Expected OPERATOR_2 in EXPRESSION_TAIL");
     }
 
     std::string opStr = currentToken.operatorStr;
@@ -123,13 +113,53 @@ std::unique_ptr<ExprAST> Parser::ParseExpression() {
     return ParseExpressionTail(std::move(LHS));
 }
 
+std::unique_ptr<PrototypeAST> Parser::ParsePrototype() {
+    if (currentToken.tokenId != tok_identifier)
+        return Logger::LogErrorP("Expected function name in prototype");
+
+    std::string FnName = currentToken.identifierStr;
+    Parser::GetNextToken();
+
+    if (currentToken.tokenId != '(')
+        return Logger::LogErrorP("Expected '(' in prototype");
+
+    std::vector<std::string> ArgNames;
+    Parser::GetNextToken(); // eat '('
+    while (currentToken.tokenId == tok_identifier) {
+        ArgNames.push_back(currentToken.identifierStr);
+        Parser::GetNextToken();
+    }
+    if (currentToken.tokenId != ')')
+        return Logger::LogErrorP("Expected ')' in prototype");
+
+    // success.
+    Parser::GetNextToken(); // eat ')'.
+
+    return std::make_unique<PrototypeAST>(FnName, std::move(ArgNames));
+}
+
+std::unique_ptr<FunctionAST> Parser::ParseDefinition() {
+    Parser::GetNextToken(); // eat def.
+    auto Prototype = ParsePrototype();
+    if (!Prototype) return nullptr;
+
+    if (auto E = Parser::ParseExpression())
+        return std::make_unique<FunctionAST>(std::move(Prototype), std::move(E));
+    return nullptr;
+}
+
+std::unique_ptr<PrototypeAST> Parser::ParseExtern() {
+    Parser::GetNextToken(); // eat 'extern'
+    return ParsePrototype();
+}
+
 std::unique_ptr<FunctionAST> Parser::ParseTopLevelExpr() {
-  if (auto E = ParseExpression()) {
-    // Make an anonymous proto.
-    auto Proto = std::make_unique<PrototypeAST>("__anonymous_expr",
-                                                std::vector<std::string>());
-    E->ToStdOut("", false);
-    return std::make_unique<FunctionAST>(std::move(Proto), std::move(E));
-  }
-  return nullptr;
+    if (auto E = ParseExpression()) {
+        // Make an anonymous proto.
+        auto Proto = std::make_unique<PrototypeAST>("__anonymous_expr",
+                                            std::vector<std::string>());
+        E->ToStdOut("", false);
+        return std::make_unique<FunctionAST>(std::move(Proto), std::move(E));
+    }
+    return nullptr;
 }

@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <stdio.h>
+#include "Logger.hpp"
 #include "Token.hpp"
 #include "Lexer.hpp"
 #include "AST.hpp"
@@ -10,8 +11,6 @@ static Token currentToken;
 
 namespace Parser {
     void GetNextToken();
-    std::unique_ptr<ExprAST> LogError(std::string str);
-    std::unique_ptr<PrototypeAST> LogErrorP(std::string str);
     std::unique_ptr<ExprAST> ParseNumberExpr();
     std::unique_ptr<ExprAST> ParseIdentifierExpr();
     std::unique_ptr<ExprAST> ParseOperation();
@@ -19,6 +18,9 @@ namespace Parser {
     std::unique_ptr<ExprAST> ParsePrimary();
     std::unique_ptr<ExprAST> ParseExpressionTail(std::unique_ptr<ExprAST> LHS);
     std::unique_ptr<ExprAST> ParseExpression();
+    std::unique_ptr<PrototypeAST> ParsePrototype();
+    std::unique_ptr<FunctionAST> ParseDefinition();
+    std::unique_ptr<PrototypeAST> ParseExtern();
     std::unique_ptr<FunctionAST> ParseTopLevelExpr();
     Token GetCurrentToken();
 }

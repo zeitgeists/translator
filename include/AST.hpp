@@ -16,6 +16,11 @@
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
 
+static std::unique_ptr<llvm::LLVMContext> TheContext;
+static std::unique_ptr<llvm::IRBuilder<>> Builder;
+static std::unique_ptr<llvm::Module> TheModule;
+static std::map<std::string, llvm::Value*> NamedValues;
+
 // ExprAST - Base class for all expression nodes.
 class ExprAST {
 public:
@@ -31,7 +36,7 @@ class NumberExprAST : public ExprAST {
 public:
     explicit NumberExprAST(double Val);
     void ToStdOut(const std::string& prefix, bool isLeft) override;
-    llvm::Value *codegen() override;
+    llvm::Value* codegen() override;
 };
 
 // VariableExprAST - Expression class for referencing a variable, like "a".
@@ -41,6 +46,7 @@ class VariableExprAST : public ExprAST {
 public:
     explicit VariableExprAST(const std::string &Name);
     void ToStdOut(const std::string& prefix, bool isLeft) override;
+    llvm::Value* codegen() override;
 };
 
 class OperatorAST : public ExprAST {
@@ -51,6 +57,7 @@ public:
     OperatorAST(std::string Operator, std::unique_ptr<ExprAST> LHS,
                 std::unique_ptr<ExprAST> RHS);
     void ToStdOut(const std::string& prefix, bool isLeft) override;
+    llvm::Value* codegen() override;
 };
 
 // CallExprAST - Expression class for function calls.
@@ -61,6 +68,8 @@ class CallExprAST : public ExprAST {
 public:
     CallExprAST(const std::string &Callee,
                 std::vector<std::unique_ptr<ExprAST>> Args);
+    llvm::Value* codegen() override;
+    // void ToStdOut(const std::string& prefix, bool isLeft) override;
 };
 
 // PrototypeAST - This class represents the "prototype" for a function,
@@ -71,6 +80,8 @@ class PrototypeAST {
 
 public:
     PrototypeAST(const std::string &Name, std::vector<std::string> Args);
+    llvm::Function* codegen();
+    // void ToStdOut(const std::string& prefix, bool isLeft);
 
     const std::string &getName() const;
 };
@@ -83,8 +94,14 @@ class FunctionAST {
 public:
     FunctionAST(std::unique_ptr<PrototypeAST> Prototype,
         std::unique_ptr<ExprAST> Body);
+    llvm::Function* codegen();
+    // void ToStdOut(const std::string& prefix, bool isLeft);
 };
 
 namespace AST {
     void PrintAST(ExprAST* expr);
+    void InitializeModule();
+    void PrintGeneratedCode();
 }
+
+#include "Logger.hpp"

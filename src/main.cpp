@@ -3,22 +3,54 @@
 #include "Parser.hpp"
 #include "AST.hpp"
 
+static void HandleDefinition() {
+    if (auto FnAST = Parser::ParseDefinition()) {
+        if (auto *FnIR = FnAST->codegen()) {
+            fprintf(stderr, "Read function definition:\n");
+            // FnAST->ToStdOut("", flase);
+            FnIR->print(llvm::errs());
+            fprintf(stderr, "\n");
+        }
+    } else {
+        // Skip token for error recovery.
+        Parser::GetNextToken();
+    }
+}
+
+static void HandleExtern() {
+    if (auto ProtoAST = Parser::ParseExtern()) {
+        if (auto *FnIR = ProtoAST->codegen()) {
+            fprintf(stderr, "Read extern:\n");
+            // ProtoAST->ToStdOut("", flase);
+            FnIR->print(llvm::errs());
+            fprintf(stderr, "\n");
+        }
+    } else {
+        // Skip token for error recovery.
+        Parser::GetNextToken();
+    }
+}
+
 static void HandleTopLevelExpression() {
     // Evaluate a top-level expression into an anonymous function.
-    if (Parser::ParseTopLevelExpr()) {
-        fprintf(stderr, "Parsed a top-level expr\n");
+    if (auto FnAST = Parser::ParseTopLevelExpr()) {
+        if (auto *FnIR = FnAST->codegen()) {
+            fprintf(stderr, "Read top-level expression:\n");
+            // FnAST->ToStdOut("", flase);
+            FnIR->print(llvm::errs());
+            fprintf(stderr, "\n");
+
+            // Remove the anonymous expression.
+            FnIR->eraseFromParent();
+        }
     } else {
         fprintf(stderr, "error in parsing top-level\n");
         // Skip token for error recovery.
         Parser::GetNextToken();
-        exit(1);
     }
-    // Lexer::PrintLoggedTokens();
 }
 
 static void MainLoop() {
-    fprintf(stderr, "$ \n");
-    Parser::GetNextToken();
     while (true) {
         fprintf(stderr, "$ \n");
         switch (Parser::GetCurrentToken().tokenId) {
@@ -27,12 +59,12 @@ static void MainLoop() {
         case ';': // ignore top-level semicolons.
             Parser::GetNextToken();
             break;
-            // case tok_def:
-            //   HandleDefinition();
-            //   break;
-            // case tok_extern:
-            //   HandleExtern();
-            //   break;
+            case tok_def:
+              HandleDefinition();
+              break;
+            case tok_extern:
+              HandleExtern();
+              break;
         default:
             HandleTopLevelExpression();
             break;
@@ -41,6 +73,10 @@ static void MainLoop() {
 }
 
 int main (int argc, char *argv[]) {
+    fprintf(stderr, "$ \n");
+    Parser::GetNextToken();
+    AST::InitializeModule();
     MainLoop();
+    AST::PrintGeneratedCode();
     return 0;
 }

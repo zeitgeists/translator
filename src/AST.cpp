@@ -7,6 +7,10 @@ void ExprAST::ToStdOut(const std::string& prefix, bool isLeft) {
 NumberExprAST::NumberExprAST(double Val) : Val(Val) {
 }
 
+llvm::Value* NumberExprAST::codegen() {
+    return llvm::ConstantFP::get(*TheContext, llvm::APFloat(Val));
+}
+
 void NumberExprAST::ToStdOut(const std::string& prefix, bool isLeft) {
     std::cout << prefix;
     std::cout <<  (isLeft ? "├──" : "└──");
@@ -15,6 +19,12 @@ void NumberExprAST::ToStdOut(const std::string& prefix, bool isLeft) {
 }
 
 VariableExprAST::VariableExprAST(const std::string &Name) : Name(Name) {
+}
+
+llvm::Value* VariableExprAST::codegen() {
+    llvm::Value *V = NamedValues[Name];
+    if (!V) return Logger::LogErrorV("Unknown variable name " + Name);
+    return V;
 }
 
 void VariableExprAST::ToStdOut(const std::string& prefix, bool isLeft) {
@@ -27,6 +37,24 @@ void VariableExprAST::ToStdOut(const std::string& prefix, bool isLeft) {
 OperatorAST::OperatorAST(std::string Operator, std::unique_ptr<ExprAST> LHS,
                         std::unique_ptr<ExprAST> RHS)
     : Operator(Operator), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
+
+llvm::Value* OperatorAST::codegen() {
+    llvm::Value *L = LHS->codegen();
+    llvm::Value *R = RHS->codegen();
+    if (!L || !R) return nullptr;
+
+    if (Operator == "+") {
+        return Builder->CreateFAdd(L, R, "addtmp");
+    } else if (Operator == "-") {
+        return Builder->CreateFSub(L, R, "subtmp");
+    } else if (Operator == "*") {
+        return Builder->CreateFMul(L, R, "multmp");
+    } else if (Operator == "/") {
+        return Builder->CreateFDiv(L, R, "divtmp");
+    } else {
+        return Logger::LogErrorV("Invalid binary operator " + Operator);
+    }
+}
 
 void OperatorAST::ToStdOut(const std::string& prefix, bool isLeft) {
     std::cout << prefix;
@@ -43,12 +71,91 @@ CallExprAST::CallExprAST(const std::string &Callee,
     : Callee(Callee), Args(std::move(Args)) {
 }
 
+llvm::Value* CallExprAST::codegen() {
+    llvm::Function *CalleeF = TheModule->getFunction(Callee);
+    if (!CalleeF) return Logger::LogErrorV("Unknown function referenced " + Callee);
+
+    // If argument mismatch error.
+    if (CalleeF->arg_size() != Args.size())
+        return Logger::LogErrorV("Incorrect amount of arguments passed");
+
+    std::vector<llvm::Value*> ArgsV;
+    for (unsigned i = 0, e = Args.size(); i != e; ++i) {
+        ArgsV.push_back(Args[i]->codegen());
+        if (!ArgsV.back()) return nullptr;
+    }
+    return Builder->CreateCall(CalleeF, ArgsV, "calltmp");
+}
+
 PrototypeAST::PrototypeAST(const std::string &Name, std::vector<std::string> Args)
     : Name(Name), Args(std::move(Args)) {
     }
+
+llvm::Function* PrototypeAST::codegen() {
+    // Make the function type:  double(double,double) etc.
+    std::vector<llvm::Type*> Doubles(Args.size(), llvm::Type::getDoubleTy(*TheContext));
+    llvm::FunctionType *FT =
+        llvm::FunctionType::get(llvm::Type::getDoubleTy(*TheContext), Doubles, false);
+
+    llvm::Function *F =
+        llvm::Function::Create(FT, llvm::Function::ExternalLinkage, Name, TheModule.get());
+
+    // Set names for all arguments.
+    unsigned Idx = 0;
+    for (auto &Arg : F->args())
+        Arg.setName(Args[Idx++]);
+
+    return F;
+}
 
 const std::string &PrototypeAST::getName() const { return Name; }
 
 FunctionAST::FunctionAST(std::unique_ptr<PrototypeAST> Prototype,
                         std::unique_ptr<ExprAST> Body)
     : Prototype(std::move(Prototype)), Body(std::move(Body)) {}
+
+llvm::Function* FunctionAST::codegen() {
+    // First, check for an existing function from a previous 'extern' declaration.
+    llvm::Function *TheFunction = TheModule->getFunction(Prototype->getName());
+
+    if (!TheFunction) TheFunction = Prototype->codegen();
+
+    if (!TheFunction) return nullptr;
+
+    // Create a new basic block to start insertion into.
+    llvm::BasicBlock *BB = llvm::BasicBlock::Create(*TheContext, "entry", TheFunction);
+    Builder->SetInsertPoint(BB);
+
+    // Record the function arguments in the NamedValues map.
+    NamedValues.clear();
+    for (auto &Arg : TheFunction->args())
+        NamedValues[std::string(Arg.getName())] = &Arg;
+
+    if (llvm::Value *RetVal = Body->codegen()) {
+        // Finish off the function.
+        Builder->CreateRet(RetVal);
+
+        // Validate the generated code, checking for consistency.
+        verifyFunction(*TheFunction);
+
+        return TheFunction;
+    }
+
+    // Error reading body, remove function.
+    TheFunction->eraseFromParent();
+    return nullptr;
+}
+
+
+void AST::InitializeModule() {
+    // Open a new context and module.
+    TheContext = std::make_unique<llvm::LLVMContext>();
+    TheModule = std::make_unique<llvm::Module>("JIT module", *TheContext);
+
+    // Create a new builder for the module.
+    Builder = std::make_unique<llvm::IRBuilder<>>(*TheContext);
+}
+
+void AST::PrintGeneratedCode() {
+    TheModule->print(llvm::errs(), nullptr);
+}
