@@ -63,11 +63,11 @@ public:
 // CallExprAST - Expression class for function calls.
 class CallExprAST : public ExprAST {
     std::string Callee;
-    std::vector<std::unique_ptr<ExprAST>> Args;
+    std::unique_ptr<std::vector<std::unique_ptr<ExprAST>>> Args;
 
 public:
     CallExprAST(const std::string &Callee,
-                std::vector<std::unique_ptr<ExprAST>> Args);
+                std::unique_ptr<std::vector<std::unique_ptr<ExprAST>>> Args);
     llvm::Value* codegen() override;
     // void ToStdOut(const std::string& prefix, bool isLeft) override;
 };
@@ -76,10 +76,11 @@ public:
 // which captures its name, and its argument names
 class PrototypeAST {
     std::string Name;
-    std::vector<std::string> Args;
+    std::unique_ptr<std::vector<std::string>> Args;
 
 public:
-    PrototypeAST(const std::string &Name, std::vector<std::string> Args);
+    PrototypeAST(const std::string &Name,
+            std::unique_ptr<std::vector<std::string>> Args);
     llvm::Function* codegen();
     // void ToStdOut(const std::string& prefix, bool isLeft);
 

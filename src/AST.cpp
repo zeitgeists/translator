@@ -67,7 +67,7 @@ void OperatorAST::ToStdOut(const std::string& prefix, bool isLeft) {
 }
 
 CallExprAST::CallExprAST(const std::string &Callee,
-                        std::vector<std::unique_ptr<ExprAST>> Args)
+                        std::unique_ptr<std::vector<std::unique_ptr<ExprAST>>> Args)
     : Callee(Callee), Args(std::move(Args)) {
 }
 
@@ -76,24 +76,25 @@ llvm::Value* CallExprAST::codegen() {
     if (!CalleeF) return Logger::LogErrorV("Unknown function referenced " + Callee);
 
     // If argument mismatch error.
-    if (CalleeF->arg_size() != Args.size())
+    if (CalleeF->arg_size() != Args->size())
         return Logger::LogErrorV("Incorrect amount of arguments passed");
 
     std::vector<llvm::Value*> ArgsV;
-    for (unsigned i = 0, e = Args.size(); i != e; ++i) {
-        ArgsV.push_back(Args[i]->codegen());
+    for (unsigned i = 0, e = Args->size(); i != e; ++i) {
+        ArgsV.push_back((*Args)[i]->codegen());
         if (!ArgsV.back()) return nullptr;
     }
     return Builder->CreateCall(CalleeF, ArgsV, "calltmp");
 }
 
-PrototypeAST::PrototypeAST(const std::string &Name, std::vector<std::string> Args)
+PrototypeAST::PrototypeAST(const std::string &Name,
+        std::unique_ptr<std::vector<std::string>> Args)
     : Name(Name), Args(std::move(Args)) {
     }
 
 llvm::Function* PrototypeAST::codegen() {
     // Make the function type:  double(double,double) etc.
-    std::vector<llvm::Type*> Doubles(Args.size(), llvm::Type::getDoubleTy(*TheContext));
+    std::vector<llvm::Type*> Doubles(Args->size(), llvm::Type::getDoubleTy(*TheContext));
     llvm::FunctionType *FT =
         llvm::FunctionType::get(llvm::Type::getDoubleTy(*TheContext), Doubles, false);
 
@@ -103,7 +104,7 @@ llvm::Function* PrototypeAST::codegen() {
     // Set names for all arguments.
     unsigned Idx = 0;
     for (auto &Arg : F->args())
-        Arg.setName(Args[Idx++]);
+        Arg.setName((*Args)[Idx++]);
 
     return F;
 }
