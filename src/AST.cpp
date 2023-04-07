@@ -87,6 +87,21 @@ llvm::Value* CallExprAST::codegen() {
     return Builder->CreateCall(CalleeF, ArgsV, "calltmp");
 }
 
+void CallExprAST::ToStdOut(const std::string& prefix, bool isLeft) {
+    std::string tmpPrefix = prefix;
+    std::cout << tmpPrefix;
+    std::cout <<  (isLeft ? "├──" : "└──");
+
+    std::cout << this->Callee
+        << " (function call)" << std::endl;
+
+    int currentAmount = 0;
+    for(auto it = Args->begin(); it != Args->end(); it++, currentAmount++) {
+        (*it)->ToStdOut(tmpPrefix + (isLeft ? "│   " : "    "),
+                (currentAmount != Args->size() - 1) ? true : false);
+    }
+}
+
 PrototypeAST::PrototypeAST(const std::string &Name,
         std::unique_ptr<std::vector<std::string>> Args)
     : Name(Name), Args(std::move(Args)) {
@@ -107,6 +122,21 @@ llvm::Function* PrototypeAST::codegen() {
         Arg.setName((*Args)[Idx++]);
 
     return F;
+}
+
+void PrototypeAST::ToStdOut(const std::string& prefix, bool isLeft) {
+    std::cout << prefix;
+    std::cout <<  (isLeft ? "├──" : "└──");
+
+    std::cout << this->Name << std::endl;
+
+    int currentAmount = 0;
+    for(auto it = Args->begin(); it != Args->end(); it++, currentAmount++) {
+        std::cout << prefix << (isLeft ? "│   " : "    ")
+            << (isLeft ? "├──" : "└──") << *it << std::endl;
+        // (*it)->ToStdOut(tmpPrefix + (isLeft ? "│   " : "    "),
+        //         (currentAmount != Args->size()) ? true : false);
+    }
 }
 
 const std::string &PrototypeAST::getName() const { return Name; }
@@ -145,6 +175,24 @@ llvm::Function* FunctionAST::codegen() {
     // Error reading body, remove function.
     TheFunction->eraseFromParent();
     return nullptr;
+}
+
+void FunctionAST::ToStdOut(const std::string& prefix, bool isLeft) {
+    std::cout << prefix;
+    std::cout <<  (isLeft ? "├──" : "└──");
+
+    std::cout << this->Prototype->getName()
+        << " (function declaration)" << std::endl;
+
+    std::cout << prefix << (isLeft ? "│   " : "    ")
+        << "├──" << "(arguments)" << std::endl;
+    Prototype->ToStdOut(prefix + "    │   " , false);
+
+
+    std::cout << prefix << (isLeft ? "│   " : "    ")
+        << "└──" << "(body)" << std::endl;
+    Body->ToStdOut(prefix + "        ", false);
+
 }
 
 

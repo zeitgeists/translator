@@ -7,7 +7,7 @@ static void HandleDefinition() {
     if (auto FnAST = Parser::ParseDefinition()) {
         if (auto *FnIR = FnAST->codegen()) {
             fprintf(stderr, "Read function definition:\n");
-            // FnAST->ToStdOut("", flase);
+            FnAST->ToStdOut("", false);
             FnIR->print(llvm::errs());
             fprintf(stderr, "\n");
         }
@@ -21,7 +21,7 @@ static void HandleExtern() {
     if (auto ProtoAST = Parser::ParseExtern()) {
         if (auto *FnIR = ProtoAST->codegen()) {
             fprintf(stderr, "Read extern:\n");
-            // ProtoAST->ToStdOut("", flase);
+            ProtoAST->ToStdOut("", false);
             FnIR->print(llvm::errs());
             fprintf(stderr, "\n");
         }
@@ -36,7 +36,7 @@ static void HandleTopLevelExpression() {
     if (auto FnAST = Parser::ParseTopLevelExpr()) {
         if (auto *FnIR = FnAST->codegen()) {
             fprintf(stderr, "Read top-level expression:\n");
-            // FnAST->ToStdOut("", flase);
+            FnAST->ToStdOut("", false);
             FnIR->print(llvm::errs());
             fprintf(stderr, "\n");
 

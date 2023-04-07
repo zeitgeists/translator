@@ -69,7 +69,7 @@ public:
     CallExprAST(const std::string &Callee,
                 std::unique_ptr<std::vector<std::unique_ptr<ExprAST>>> Args);
     llvm::Value* codegen() override;
-    // void ToStdOut(const std::string& prefix, bool isLeft) override;
+    void ToStdOut(const std::string& prefix, bool isLeft) override;
 };
 
 // PrototypeAST - This class represents the "prototype" for a function,
@@ -82,7 +82,7 @@ public:
     PrototypeAST(const std::string &Name,
             std::unique_ptr<std::vector<std::string>> Args);
     llvm::Function* codegen();
-    // void ToStdOut(const std::string& prefix, bool isLeft);
+    void ToStdOut(const std::string& prefix, bool isLeft);
 
     const std::string &getName() const;
 };
@@ -96,7 +96,7 @@ public:
     FunctionAST(std::unique_ptr<PrototypeAST> Prototype,
         std::unique_ptr<ExprAST> Body);
     llvm::Function* codegen();
-    // void ToStdOut(const std::string& prefix, bool isLeft);
+    void ToStdOut(const std::string& prefix, bool isLeft);
 };
 
 namespace AST {
