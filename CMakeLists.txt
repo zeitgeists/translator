@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
 
-include(CMake/HunterPackages.cmake)
-
 # Project name and a few useful settings. Other commands can pick up the results
 project(
   translator)
@@ -11,40 +9,24 @@ project(
 # Enable solution folder support
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# Append the CMake module search path so we can use our own modules
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/CMake)
+find_package(LLVM REQUIRED CONFIG)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(DCMAKE_BUILD_TYPE Debug)
 
-# LLVM wrapper
-include(CMake/LLVM.cmake)
-
-# MSVC-specific options
-if(MSVC)
-    # This assumes the installed LLVM was built in Release mode
-    set(CMAKE_C_FLAGS_RELWITHDEBINFO "/ZI /Od /Ob0 /DNDEBUG" CACHE STRING "" FORCE)
-    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "/ZI /Od /Ob0 /DNDEBUG" CACHE STRING "" FORCE)
-
-    if(${LLVM_USE_CRT_RELEASE} STREQUAL "MD")
-        set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
-    elseif(${LLVM_USE_CRT_RELEASE} STREQUAL "MT")
-        set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreaded)
-    else()
-        message(FATAL_ERROR "Unsupported LLVM_USE_CRT_RELEASE=${LLVM_USE_CRT_RELEASE}")
-    endif()
-endif()
-
 include_directories(
     ${PROJECT_SOURCE_DIR}/src
     ${PROJECT_SOURCE_DIR}/include
+    ${LLVM_INCLUDE_DIRS}
 )
+separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
+add_definitions(${LLVM_DEFINITIONS})
 
 file(GLOB all_SRCS
     "${PROJECT_SOURCE_DIR}/include/*.hpp"
