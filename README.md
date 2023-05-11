@@ -5,6 +5,7 @@ studying translator implementation
 ```bash
 git clone git@github.com:zeitgeists/translator.git && \
 cd translator && \
+git submodule update --init --recursive && \
 cmake -S . -B build && \
 cmake --build build
 ```
