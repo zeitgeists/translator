@@ -6,7 +6,7 @@ studying translator implementation
 git clone git@github.com:zeitgeists/translator.git && \
 cd translator && \
 git submodule update --init --recursive && \
-cmake -S . -B build && \
+cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=./vcpkg/scripts/buildsystems/vcpkg.cmake && \
 cmake --build build
 ```
 
