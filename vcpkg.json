@@ -1,5 +1,9 @@
 {
-  "dependencies": [
-     { "name": "llvm", "version>=": "15.0.7" }
-  ]
+    "dependencies": [
+        {
+            "name": "llvm",
+            "version>=": "15.0.7"
+        }
+    ],
+    "builtin-baseline": "8dfdcc7b7bf66834a761bd8de445840ef68e4d1a"
 }
