@@ -12,14 +12,21 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/Transforms/InstCombine/InstCombine.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/Scalar/GVN.h"
 
 static std::unique_ptr<llvm::LLVMContext> TheContext;
 static std::unique_ptr<llvm::IRBuilder<>> Builder;
 static std::unique_ptr<llvm::Module> TheModule;
 static std::map<std::string, llvm::Value*> NamedValues;
+static std::unique_ptr<llvm::legacy::FunctionPassManager> TheFPM;
 
 // ExprAST - Base class for all expression nodes.
 class ExprAST {
@@ -101,7 +108,7 @@ public:
 
 namespace AST {
     void PrintAST(ExprAST* expr);
-    void InitializeModule();
+    void InitializeModuleAndFPM();
     void PrintGeneratedCode();
 }
 

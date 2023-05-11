@@ -169,6 +169,9 @@ llvm::Function* FunctionAST::codegen() {
         // Validate the generated code, checking for consistency.
         verifyFunction(*TheFunction);
 
+        // Optimize the function.
+        TheFPM->run(*TheFunction);
+
         return TheFunction;
     }
 
@@ -196,13 +199,27 @@ void FunctionAST::ToStdOut(const std::string& prefix, bool isLeft) {
 }
 
 
-void AST::InitializeModule() {
+void AST::InitializeModuleAndFPM() {
     // Open a new context and module.
     TheContext = std::make_unique<llvm::LLVMContext>();
     TheModule = std::make_unique<llvm::Module>("JIT module", *TheContext);
 
     // Create a new builder for the module.
     Builder = std::make_unique<llvm::IRBuilder<>>(*TheContext);
+
+    // Create a new pass manager attached to it.
+    TheFPM = std::make_unique<llvm::legacy::FunctionPassManager>(TheModule.get());
+
+    // Do simple "peephole" optimizations and bit-twiddling optzns.
+    TheFPM->add(llvm::createInstructionCombiningPass());
+    // Reassociate expressions.
+    TheFPM->add(llvm::createReassociatePass());
+    // Eliminate Common SubExpressions.
+    TheFPM->add(llvm::createGVNPass());
+    // Simplify the control flow graph (deleting unreachable blocks, etc).
+    TheFPM->add(llvm::createCFGSimplificationPass());
+
+    TheFPM->doInitialization();
 }
 
 void AST::PrintGeneratedCode() {
