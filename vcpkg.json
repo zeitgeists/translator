@@ -1,5 +1,5 @@
 {
   "dependencies": [
-    "llvm"
+     { "name": "llvm", "version>=": "15.0.7" }
   ]
 }
