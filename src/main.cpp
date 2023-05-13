@@ -75,7 +75,7 @@ static void MainLoop() {
 int main (int argc, char *argv[]) {
     fprintf(stderr, "$ \n");
     Parser::GetNextToken();
-    AST::InitializeModule();
+    AST::InitializeModuleAndFPM();
     MainLoop();
     AST::PrintGeneratedCode();
     return 0;
