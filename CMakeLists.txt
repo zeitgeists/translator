@@ -9,7 +9,7 @@ project(
 # Enable solution folder support
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-find_package(LLVM REQUIRED CONFIG)
+find_package(LLVM REQUIRED)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
@@ -46,7 +46,12 @@ endif()
 
 add_executable(${PROJECT_NAME} ${all_SRCS})
 
+# Find the libraries that correspond to the LLVM components
+# that we wish to use
+# llvm_map_components_to_libnames(llvm_libs support core ir)
+
 # Link against LLVM
+# target_link_libraries(${PROJECT_NAME} ${llvm_libs})
 target_link_libraries(${PROJECT_NAME} PRIVATE LLVM)
 
 # Set the plugin as the startup project
