@@ -23,11 +23,15 @@
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Scalar/GVN.h"
 
-static std::unique_ptr<llvm::LLVMContext> TheContext;
-static std::unique_ptr<llvm::IRBuilder<>> Builder;
-static std::unique_ptr<llvm::Module> TheModule;
-static std::map<std::string, llvm::Value*> NamedValues;
-static std::unique_ptr<llvm::legacy::FunctionPassManager> TheFPM;
+#include "JIT.hpp"
+
+inline std::unique_ptr<llvm::LLVMContext> TheContext;
+inline std::unique_ptr<llvm::IRBuilder<>> Builder;
+inline std::unique_ptr<llvm::Module> TheModule;
+inline std::map<std::string, llvm::Value*> NamedValues;
+inline std::unique_ptr<llvm::legacy::FunctionPassManager> TheFPM;
+inline std::unique_ptr<llvm::orc::MyCustomJIT> TheJIT;
+inline llvm::ExitOnError ExitOnErr;
 
 // ExprAST - Base class for all expression nodes.
 class ExprAST {
@@ -113,4 +117,5 @@ namespace AST {
     void PrintGeneratedCode();
 }
 
+inline std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
 #include "Logger.hpp"

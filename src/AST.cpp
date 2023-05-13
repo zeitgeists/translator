@@ -203,6 +203,7 @@ void AST::InitializeModuleAndFPM() {
     // Open a new context and module.
     TheContext = std::make_unique<llvm::LLVMContext>();
     TheModule = std::make_unique<llvm::Module>("JIT module", *TheContext);
+    TheModule->setDataLayout(TheJIT->getDataLayout());
 
     // Create a new builder for the module.
     Builder = std::make_unique<llvm::IRBuilder<>>(*TheContext);
