@@ -72,7 +72,8 @@ CallExprAST::CallExprAST(const std::string &Callee,
 }
 
 llvm::Value* CallExprAST::codegen() {
-    llvm::Function *CalleeF = TheModule->getFunction(Callee);
+    // Look up the name in the global module table.
+    llvm::Function *CalleeF = getFunction(Callee);
     if (!CalleeF) return Logger::LogErrorV("Unknown function referenced " + Callee);
 
     // If argument mismatch error.
@@ -146,12 +147,13 @@ FunctionAST::FunctionAST(std::unique_ptr<PrototypeAST> Prototype,
     : Prototype(std::move(Prototype)), Body(std::move(Body)) {}
 
 llvm::Function* FunctionAST::codegen() {
-    // First, check for an existing function from a previous 'extern' declaration.
-    llvm::Function *TheFunction = TheModule->getFunction(Prototype->getName());
-
-    if (!TheFunction) TheFunction = Prototype->codegen();
-
-    if (!TheFunction) return nullptr;
+    // Transfer ownership of the prototype to the FunctionProtos map, but keep a
+    // reference to it for use below.
+    auto &P = *Prototype;
+    FunctionProtos[Prototype->getName()] = std::move(Prototype);
+    llvm::Function *TheFunction = getFunction(P.getName());
+    if (!TheFunction)
+        return nullptr;
 
     // Create a new basic block to start insertion into.
     llvm::BasicBlock *BB = llvm::BasicBlock::Create(*TheContext, "entry", TheFunction);
@@ -198,7 +200,6 @@ void FunctionAST::ToStdOut(const std::string& prefix, bool isLeft) {
 
 }
 
-
 void AST::InitializeModuleAndFPM() {
     // Open a new context and module.
     TheContext = std::make_unique<llvm::LLVMContext>();
@@ -225,4 +226,19 @@ void AST::InitializeModuleAndFPM() {
 
 void AST::PrintGeneratedCode() {
     TheModule->print(llvm::errs(), nullptr);
+}
+
+llvm::Function *getFunction(std::string name) {
+    // First, see if the function has already been added to the current module.
+    if (auto *F = TheModule->getFunction(name))
+        return F;
+
+    // If not, check whether we can codegen the declaration from some existing
+    // prototype.
+    auto FI = FunctionProtos.find(name);
+    if (FI != FunctionProtos.end())
+        return FI->second->codegen();
+
+    // If no existing prototype exists, return null.
+    return nullptr;
 }

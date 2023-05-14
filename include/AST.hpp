@@ -117,5 +117,7 @@ namespace AST {
     void PrintGeneratedCode();
 }
 
+llvm::Function *getFunction(std::string name);
+
 inline std::map<std::string, std::unique_ptr<PrototypeAST>> FunctionProtos;
 #include "Logger.hpp"

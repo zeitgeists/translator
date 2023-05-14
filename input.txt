@@ -5,6 +5,14 @@
 #def baz(y) y * (bar(5 + 7 * y) + 8 * foo(y*2, bar(y)));
 def test(x) (1+2+x)*(x+(1+2));
 test(3) + 4 + 0.004;
+#def test(x) x + 3;
+#test(3);
+extern sin(x);
+extern cos(x);
+cos(5) + sin(2);
+def func1(x) sin(x);
+extern graph(min, max, n);
+graph(1, 10, 1);
 #2+2;
 #564+345*123;
 #

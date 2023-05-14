@@ -189,7 +189,6 @@ std::unique_ptr<FunctionAST> Parser::ParseTopLevelExpr() {
         // Make an anonymous proto.
         auto Proto = std::make_unique<PrototypeAST>("__anonymous_expr",
                                 std::make_unique<std::vector<std::string>>());
-        E->ToStdOut("", false);
         return std::make_unique<FunctionAST>(std::move(Proto), std::move(E));
     }
     return nullptr;
