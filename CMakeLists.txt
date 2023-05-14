@@ -18,7 +18,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(DCMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Debug)
 
 include_directories(
     ${PROJECT_SOURCE_DIR}/src
@@ -45,6 +45,7 @@ if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
 endif()
 
 add_executable(${PROJECT_NAME} ${all_SRCS})
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -rdynamic")
 
 # Find the libraries that correspond to the LLVM components
 # that we wish to use
