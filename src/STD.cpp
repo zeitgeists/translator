@@ -1,7 +1,7 @@
 #include "STD.hpp"
 #include "AST.hpp"
 
-extern "C" DLLEXPORT double graph(double min, double max, double n) {
+extern "C" DLLEXPORT double graph(double min, double max, double step, double n) {
     std::string functionName =  std::format("{}{}", "func", n);
 
     auto Result = TheJIT->lookup(functionName);
@@ -16,8 +16,8 @@ extern "C" DLLEXPORT double graph(double min, double max, double n) {
     if (!FP) {
     }
 
-    for (int i = min; i < max; ++i) {
-        std::cout << i << "\t" << FP(i) << std::endl;
+    for (double i = min; i < max; i += step) {
+        std::cout << i << "," << FP(i) << std::endl;
     }
     return 0;
 }

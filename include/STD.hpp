@@ -6,4 +6,4 @@
 
 #include <iostream>
 
-extern "C" DLLEXPORT double graph(double min, double max, double n);
+extern "C" DLLEXPORT double graph(double min, double max, double step, double n);
