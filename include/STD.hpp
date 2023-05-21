@@ -4,7 +4,7 @@
 #define DLLEXPORT
 #endif
 
-#include <iostream>
-#include <fstream>
+#include <fmt/core.h>
+#include <fmt/os.h>
 
 extern "C" DLLEXPORT double graph(double min, double max, double step, double n);

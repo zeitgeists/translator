@@ -2,33 +2,30 @@
 #include "AST.hpp"
 
 extern "C" DLLEXPORT double graph(double min, double max, double step, double n) {
-    //std::string functionName =  std::format("{}{}", "func", n);
-    std::string functionNum = std::to_string(n);
-    std::string functionName = "func" + std::to_string(n);
+    constexpr char fileName[] = {"data.csv"};
+    std::string functionName =  fmt::format("{}{:.0f}", "func", n);
 
     auto Result = TheJIT->lookup(functionName);
     if (auto E = Result.takeError()) {
         Logger::LogError(
-           // std::format("function 'graph' called but {} function was not found",
-           // functionName)
-           "function 'graph' called but " + functionName + " function was not found");
+           std::format("function 'graph' called but {} function was not found",
+           functionName));
         return -1;
     }
-    double (*FP)(double) =
-        (double (*)(double))(intptr_t)Result->getAddress();
-    if (!FP) {
-    }
+    double (*FP)(double) = (double (*)(double))(intptr_t)Result->getAddress();
 
-    std::ofstream outputFile("data.txt");
+    auto out = fmt::output_file(fileName);
 
-    if (outputFile.is_open()) {
+    try {
         for (double i = min; i < max; i += step) {
-            outputFile << i << "," << FP(i) << std::endl;
+            out.print("{},{}\n", i, FP(i));
         }
-        outputFile.close();
-    } else {
-    
-    std::cout << "Unable to open the file." << std::endl;
+        out.close();
+    } catch (const std::system_error& e) {
+        Logger::LogError(fmt::format("Error {}, meaning {}",
+            e.code(), e.what()));
+        return -2;
     }
+
     return 0;
 }
