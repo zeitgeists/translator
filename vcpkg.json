@@ -10,7 +10,11 @@
                 "disable-assertions",
                 "disable-clang-static-analyzer"
             ]
+        },
+        {
+            "name": "fmt",
+            "version>=": "9.1.0"
         }
     ],
-    "builtin-baseline": "ed8fb07a8bd19568c8594c6f1a04955242f82d35"
+    "builtin-baseline": "14a96b1980a55760ad8f4ff2c54ea71475de8657"
 }

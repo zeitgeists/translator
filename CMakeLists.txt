@@ -9,7 +9,8 @@ project(
 # Enable solution folder support
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-find_package(LLVM REQUIRED)
+find_package(LLVM CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
@@ -26,6 +27,9 @@ include_directories(
     ${LLVM_INCLUDE_DIRS}
 )
 separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
+add_definitions(${LLVM_DEFINITIONS})
+list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
+include(HandleLLVMOptions)
 add_definitions(${LLVM_DEFINITIONS})
 
 file(GLOB all_SRCS
@@ -47,6 +51,8 @@ endif()
 add_executable(${PROJECT_NAME} ${all_SRCS})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -rdynamic")
 
+target_include_directories(${PROJECT_NAME} PRIVATE ${LLVM_INCLUDE_DIRS})
+
 # Find the libraries that correspond to the LLVM components
 # that we wish to use
 # llvm_map_components_to_libnames(llvm_libs support core ir)
@@ -54,6 +60,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -rdynamic")
 # Link against LLVM
 # target_link_libraries(${PROJECT_NAME} ${llvm_libs})
 target_link_libraries(${PROJECT_NAME} PRIVATE LLVM)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE fmt::fmt)
 
 # Set the plugin as the startup project
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME})
