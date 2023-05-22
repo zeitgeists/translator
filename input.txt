@@ -8,11 +8,12 @@ test(3) + 4 + 0.004;
 #def test(x) x + 3;
 #test(3);
 extern sin(x);
-extern cos(x);
+extern pow(x, n);
+extern fabs(x);
 cos(5) + sin(2);
-def func1(x) sin(x);
+def func1(x) fabs(sin(pow(x, x))/pow(2, (pow(x, x) - 3.1415/2) / 3.1415));
 extern graph(min, max, step, n);
-graph(1, 10, 0.1, 1);
+graph(0, 3, 0.001, 1);
 #2+2;
 #564+345*123;
 #
