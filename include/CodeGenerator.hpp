@@ -44,11 +44,11 @@ public:
     bool GenFunction();
     bool GenAnonFunction();
 private:
-    std::queue<Token> termQueue;
+    std::queue<Token> termsQueue;
     std::queue<Token> operatorsQueue;
-    std::queue<Token> paramQueue;
-    std::queue<std::unique_ptr<llvm::Value>> argQueue;
-    std::queue<std::unique_ptr<llvm::Value>> valuesQueue;
+    std::stack<Token> paramQueue;
+    std::stack<std::unique_ptr<llvm::Value>> argQueue;
+    std::stack<std::unique_ptr<llvm::Value>> valuesQueue;
 
     std::unique_ptr<llvm::LLVMContext> TheContext;
     std::unique_ptr<llvm::IRBuilder<>> Builder;

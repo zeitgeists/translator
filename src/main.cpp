@@ -113,10 +113,12 @@ int main (int argc, const char *argv[]) {
 
     std::unique_ptr<Lexer> lexer(new Lexer(fileName));
 
-    while (lexer->GetToken().type != Token::Eof);
-    lexer->PrintLoggedTokens();
+    // while (lexer->GetToken().type != Token::Eof);
+    // lexer->PrintLoggedTokens();
 
     Parser parser(std::move(lexer));
+
+    parser.ParseLoop();
 
     // AST::PrintGeneratedCode();
     return 0;

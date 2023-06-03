@@ -14,25 +14,27 @@ public:
     void ParseLoop();
 private:
     class FSM {
-    private:
+    public:
         struct State {
             std::list<Token> expectedTokens = {};
             int next = 0;
             bool isReadNextToken = false;
             int toStack = 0;
-            bool pushTerm = false;
-            bool pushOperator = false;
             int error = -1; // if -1 then error can NOT be ignored;
-            void (*CG)() = nullptr; // CodeGen
+            std::function<void(Token)> PushToken = nullptr;
+            std::function<bool()> CG = nullptr;
         };
-    public:
         FSM();
         ~FSM();
         State* states;
+        CodeGenerator codeGen;
     };
+
+    bool isCurrentTokenExpected();
 
     std::unique_ptr<Lexer> lexer;
     Token currentToken;
-    static const FSM fsm;
-    CodeGenerator codeGen;
+    FSM::State* currentState;
+    std::stack<int> whereIsNext;
+    FSM fsm;
 };

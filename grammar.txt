@@ -14,7 +14,6 @@ e/1
 <TOP> ::= <EXTERNAL>/8
 <TOP> ::= <DEFINITION>/9
 <TOP> ::= <EXPRESSION>/10+genAnonFunction
-<TOP> ::= e
 
 <EXTERNAL>   ::= {Extern}/11 <PROTOTYPE>/12+genExternal
 <DEFINITION> ::= {Def}/13 <PROTOTYPE>/14 <EXPRSSION>/15+genFunction
