@@ -47,17 +47,17 @@ private:
     std::queue<Token> termsQueue;
     std::queue<Token> operatorsQueue;
     std::stack<Token> paramQueue;
-    std::stack<std::unique_ptr<llvm::Value>> argQueue;
-    std::stack<std::unique_ptr<llvm::Value>> valuesQueue;
-
-    std::unique_ptr<llvm::LLVMContext> TheContext;
-    std::unique_ptr<llvm::IRBuilder<>> Builder;
-    std::unique_ptr<llvm::Module> TheModule;
-    std::map<std::string, llvm::Value*> NamedValues;
-    std::unique_ptr<llvm::legacy::FunctionPassManager> TheFPM;
-    std::unique_ptr<llvm::orc::MyCustomJIT> TheJIT;
-    llvm::ExitOnError ExitOnErr;
-
-    llvm::Function *getFunction(std::string name);
-    std::map<std::string, std::unique_ptr<llvm::Function>> FunctionProtos;
+    // std::stack<std::unique_ptr<llvm::Value>> argQueue;
+    // std::stack<std::unique_ptr<llvm::Value>> valuesQueue;
+    //
+    // std::unique_ptr<llvm::LLVMContext> TheContext;
+    // std::unique_ptr<llvm::IRBuilder<>> Builder;
+    // std::unique_ptr<llvm::Module> TheModule;
+    // std::map<std::string, llvm::Value*> NamedValues;
+    // std::unique_ptr<llvm::legacy::FunctionPassManager> TheFPM;
+    // std::unique_ptr<llvm::orc::MyCustomJIT> TheJIT;
+    // llvm::ExitOnError ExitOnErr;
+    //
+    // llvm::Function *getFunction(std::string name);
+    // std::map<std::string, std::unique_ptr<llvm::Function>> FunctionProtos;
 };
