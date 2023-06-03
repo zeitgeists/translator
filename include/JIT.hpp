@@ -30,9 +30,9 @@ private:
   JITDylib &MainJD;
 
 public:
-  MyCustomJIT(std::unique_ptr<ExecutionSession> ES,
-                  JITTargetMachineBuilder JTMB, DataLayout DL)
-      : ES(std::move(ES)), DL(std::move(DL)), Mangle(*this->ES, this->DL),
+  MyCustomJIT(std::unique_ptr<ExecutionSession> es,
+                  JITTargetMachineBuilder JTMB, DataLayout dl)
+      : ES(std::move(es)), DL(std::move(dl)), Mangle(*this->ES, this->DL),
         ObjectLayer(*this->ES,
                     []() { return std::make_unique<SectionMemoryManager>(); }),
         CompileLayer(*this->ES, ObjectLayer,
