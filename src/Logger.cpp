@@ -1,3 +1,4 @@
+#ifdef DO_NOT_BILD
 #include "Logger.hpp"
 
 std::unique_ptr<ExprAST> Logger::LogError(std::string str) {
@@ -14,3 +15,4 @@ llvm::Value* Logger::LogErrorV(std::string str) {
     Logger::LogError(str);
     return nullptr;
 }
+#endif

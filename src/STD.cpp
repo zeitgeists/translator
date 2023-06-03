@@ -1,3 +1,4 @@
+#ifdef DONOTBUILD
 #include "STD.hpp"
 #include "AST.hpp"
 
@@ -29,3 +30,4 @@ extern "C" DLLEXPORT double graph(double min, double max, double step, double n)
 
     return 0;
 }
+#endif

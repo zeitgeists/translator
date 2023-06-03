@@ -1,3 +1,4 @@
+#ifdef dontbuild
 #pragma once
 
 #include "AST.hpp"
@@ -11,3 +12,4 @@ namespace Logger {
     std::unique_ptr<PrototypeAST> LogErrorP(std::string str);
     llvm::Value* LogErrorV(std::string str);
 }
+#endif

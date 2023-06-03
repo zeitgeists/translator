@@ -1,3 +1,4 @@
+#ifdef DO_NOT_BILD
 #include "AST.hpp"
 
 void ExprAST::ToStdOut(const std::string& prefix, bool isLeft) {
@@ -242,3 +243,4 @@ llvm::Function *getFunction(std::string name) {
     // If no existing prototype exists, return null.
     return nullptr;
 }
+#endif
