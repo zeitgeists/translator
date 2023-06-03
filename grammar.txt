@@ -1,45 +1,61 @@
-<OPERATOR_1> ::= '+' | '-'
-<OPERATOR_2> ::= '*' | '/' | '%'
+Grammar
 
-<TERM> ::= TOK_ID
-<TERM> ::= TOK_CONST
-<TERM> ::= '(' <EXPRESSION> ')'
-<TERM> ::= <FUNCTION_CALL>
+program:
 
-<FUNCTION_CALL> ::= TOK_ID '(' <ARG_LIST> ')'
+e/1
 
-<NEGATION> ::= <TERM>
-<NEGATION> ::= '-'<TERM>
+<S>    ::= <BODY>/2 {Eof}/3
+<BODY> ::= <TOP>/4 {Semicolon}/5 <BODY_TAIL>/6
+<BODY> ::= e
 
-<OP_2_LIST> ::= <NEGATION> <OP_2_LIST_TAIL>
-<OP_2_LIST_TAIL> ::= <OPERATOR_2> <NEGATION> <OP_2_LIST_TAIL>
-<OP_2_LIST_TAIL> ::= e
+<BODY_TAIL> ::= <BODY>/7
+<BODY_TAIL> ::= e
 
-<OP_1_LIST> ::= <OP_2_LIST> <OP_1_LIST_TAIL>
-<OP_1_LIST_TAIL> ::= <OPERATOR_1> <OP_2_LIST> <OP_1_LIST_TAIL>
-<OP_1_LIST_TAIL> ::= e
+<TOP> ::= <EXTERNAL>/8
+<TOP> ::= <DEFINITION>/9
+<TOP> ::= <EXPRESSION>/10+genAnonFunction
+<TOP> ::= e
 
-<EXPRESSION> ::= <OP_1_LIST>
+<EXTERNAL>   ::= {Extern}/11 <PROTOTYPE>/12+genExternal
+<DEFINITION> ::= {Def}/13 <PROTOTYPE>/14 <EXPRSSION>/15+genFunction
 
-<PARAM_LIST> ::= TOK_ID <PARAM_LIST_TAIL>
+<PROTOTYPE>  ::= {Identifier}/16+pushStr {LParen}/17 <PARAM_LIST>/18 {RParen}/19
+
+<PARAM_LIST> ::= {Identifier}/20+pushParam <PARAM_LIST_TAIL>/21
 <PARAM_LIST> ::= e
 
-<PARAM_LIST_TAIL> ::= ',' TOK_ID <PARAM_LIST>
+<PARAM_LIST_TAIL> ::= {Comma}/22 {Identifier}/23+pushParam <PARAM_LIST_TAIL>/24
 <PARAM_LIST_TAIL> ::= e
 
-<ARG_LIST> ::= <EXPRESSION> <ARG_LIST_TAIL>
+<EXPRESSION> ::= <OP_1_LIST>/25
+
+<OP_1_LIST> ::= <OP_2_LIST>/26 <OP_1_LIST_TAIL>/27
+
+<OP_1_LIST_TAIL> ::= <OPERATOR_1>/28 <OP_2_LIST>/29+genOperation <OP_1_LIST_TAIL>/30
+<OP_1_LIST_TAIL> ::= e
+
+<OP_2_LIST> ::= <NEGATION>/31 <OP_2_LIST_TAIL>/32
+
+<OP_2_LIST_TAIL> ::= <OPERATOR_2>/33 <NEGATION>/34+genOperation <OP_2_LIST_TAIL>/35
+<OP_2_LIST_TAIL> ::= e
+
+<NEGATION> ::= <TERM>/36
+<NEGATION> ::= {Minus}/37+pushOperator <TERM>/38+genNegation
+
+<TERM> ::= {Identifier}/39+pushStr+genVariable
+<TERM> ::= {Number}/40+pushStr+genNumber
+<TERM> ::= {LParen}/41 <EXPRESSION>/42 {RParen}/43
+<TERM> ::= <FUNCTION_CALL>/44
+
+<OPERATOR_1> ::= {Plus}/45+pushOperator
+<OPERATOR_1> ::= {Minus}/46+pushOperator
+<OPERATOR_2> ::= {Multiply}/47+pushOperator
+<OPERATOR_2> ::= {Divide}/48+pushOperator
+
+<FUNCTION_CALL> ::= {Identifier}/49+pushStr {LParen}/50 <ARG_LIST>/51 {RParen}/52+genCall
+
+<ARG_LIST> ::= <EXPRESSION>/53+pushArg <ARG_LIST_TAIL>/54
 <ARG_LIST> ::= e
 
-<ARG_LIST_TAIL> ::= ',' <EXPRESSION> <ARG_LIST_TAIL>
+<ARG_LIST_TAIL> ::= {Comma}/55 <EXPRESSION>/56+pushArg <ARG_LIST_TAIL>/57
 <ARG_LIST_TAIL> ::= e
-
-<PROTOTYPE> ::= TOK_ID '(' <PARAM_LIST> ')'
-
-<EXTERNAL> ::= 'extern' <PROTOTYPE>
-
-<DEFINITION> ::= 'def' <PROTOTYPE> <EXPRSSION>
-
-<TOP> ::= <DEFINITION> ';'
-<TOP> ::= <EXTERNAL> ';'
-<TOP> ::= <EXPRESSION> ';'
-<TOP> ::= e
