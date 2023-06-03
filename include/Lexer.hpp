@@ -2,20 +2,39 @@
 
 #include "Token.hpp"
 
+#include <cstdint>
 #include <list>
 #include <fstream>
 #include <iostream>
-#include <iomanip>
+#include <fmt/core.h>
+#include <memory>
 
-namespace Lexer {
-    // gettok - Return the next token from standard input.
-    // returns tokens [0-255] if it is an unknown character
+class Lexer {
+public:
+    explicit Lexer(const std::string& fileName = "");
+    Lexer(const Lexer&);
+    Lexer(Lexer&&) noexcept;
     Token GetToken();
-    Token LogToken(Token &token);
-    Token MakeToken();
+    void PrintLoggedTokens();
+private:
+    class FSM {
+    private:
+        struct State {
+            uint8_t actions[256] = { 0 };
+            void (*TS)(Token&) = nullptr; // TokenSet
+        };
+    public:
+        FSM();
+        ~FSM();
+        State* states;
+    };
+
     int ReadNextChar();
     std::string TokenIdToStr(int id);
-    void PrintLoggedTokens();
-}
+    Token LogToken(Token &token);
+    Token MakeToken();
 
-static std::fstream fin("/home/bluten/Projects/translator/input.txt", std::fstream::in);
+    std::list<Token> loggedTokens;
+    std::shared_ptr<std::istream> input;
+    static const FSM fsm;
+};

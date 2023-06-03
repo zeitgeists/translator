@@ -1,59 +1,49 @@
 #include "Lexer.hpp"
-#include <iomanip>
 
-std::list<Token> loggedTokens;
+const Lexer::FSM Lexer::fsm;
 
-int Lexer::ReadNextChar() {
-    // fin >> std::noskipws >> ch;
-    char ch;
-    fin.get(ch);
-    if (fin.eof()) return EOF;
-    // std::cout << "Readed form file: " << ch << std::endl;
-    return ch;
-    //return getchar();
+Lexer::Lexer(const std::string& fileName) {
+    if (!fileName.empty()) {
+        std::ifstream* fileStream = new std::ifstream(fileName);
+        if (!fileStream->is_open()) {
+            // TODO: use logging
+            fmt::print("Failed to open file: {}\n", fileName);
+            delete fileStream;
+            input.reset(&std::cin, [](void*) {});
+        } else {
+            input.reset(fileStream, [](void* ptr) {
+                delete static_cast<std::ifstream*>(ptr);
+            });
+        }
+    } else {
+        input.reset(&std::cin, [](void*) {});
+    }
 }
 
-std::string Lexer::TokenIdToStr(int id) {
-    std::string str;
-    switch (id) {
-    case tok_eof:
-        str = "eof";
-        break;
-    case tok_def:
-        str = "def";
-        break;
-    case tok_extern:
-        str = "extern";
-        break;
-    case tok_identifier:
-        str = "identifier";
-        break;
-    case tok_number:
-        str = "number";
-        break;
-    case tok_operator_1:
-        str = "operator_1";
-        break;
-    case tok_operator_2:
-        str = "operator_2";
-        break;
-    default:
-        str = id;
-    }
-    return str;
+// Copy constructor
+Lexer::Lexer(const Lexer& arg)
+    : loggedTokens(arg.loggedTokens),
+    input(arg.input) {
+}
+
+// Move constructor
+Lexer::Lexer(Lexer&& arg) noexcept
+    : loggedTokens(std::move(arg.loggedTokens)),
+      input(std::move(arg.input)) {
+}
+
+int Lexer::ReadNextChar() {
+    return input->get();
 }
 
 void Lexer::PrintLoggedTokens() {
-    Token token;
-    std::cout << "    id    | identifier | operator | number\n";
+    Token t;
+    fmt::print("{:^13}|{:^13}|{:^13}\n", "type", "subtype", "str");
     while (!loggedTokens.empty()) {
-        token = loggedTokens.front();
+        t = loggedTokens.front();
         loggedTokens.pop_front();
-        std::cout << std::right << std::setw(10) << TokenIdToStr(token.tokenId)
-            << "|" << std::setw(12) << token.identifierStr
-            << "|" << std::setw(10) << token.operatorStr
-            << "|" << std::setw(10) << token.numVal
-            << std::endl;
+        fmt::print("{:^13}|{:^13}|{:^13}\n",
+            t.typeToStr(), t.subtypeToStr(), t.str);
     }
 }
 
@@ -64,75 +54,198 @@ Token Lexer::GetToken() {
 }
 
 Token Lexer::MakeToken() {
-    Token token;
-    static int LastChar = ' ';
+    Token t;
+    static int currentChar = ' ';
+    std::string buf;
 
-    // Skip any whitespace.
-    while (isspace(LastChar))
-        LastChar = ReadNextChar();
-
-    if (isalpha(LastChar)) { // identifier: [a-zA-Z][a-zA-Z0-9]*
-        token.identifierStr = LastChar;
-        while (isalnum((LastChar = ReadNextChar())))
-            token.identifierStr += LastChar;
-
-        if (token.identifierStr == "def") {
-            token.tokenId = tok_def;
-        } else if (token.identifierStr == "extern") {
-            token.tokenId = tok_extern;
-        } else {
-            token.tokenId = tok_identifier;
+    do {
+        if (currentChar == EOF) {
+            TokenSet::Eof(t);
+            return t;
         }
-        return token;
-    }
-
-    if (isdigit(LastChar) || LastChar == '.') {   // Number: [0-9.]+
-        std::string NumStr;
+        buf = "";
+        unsigned int currentState = 0;
         do {
-            NumStr += LastChar;
-            LastChar = ReadNextChar();
-        } while (isdigit(LastChar) || LastChar == '.');
+            currentState = fsm.states[currentState].actions[currentChar];
+            buf += currentChar;
+            currentChar = Lexer::ReadNextChar();
+        } while ((currentState != 0)
+                and (fsm.states[currentState].actions[currentChar] != 0));
 
-        token.numVal = strtod(NumStr.c_str(), 0);
-        token.tokenId = tok_number;
-        return token;
+        if (fsm.states[currentState].TS != nullptr) {
+            fsm.states[currentState].TS(t);
+        } else {
+            // Log this
+            fmt::print("TokenSet reference is NULL!!! Lexer FSM table WRONG:\n");
+            fmt::print("\tcurrentState = {}\n", currentState);
+            fmt::print("\tcurrentChar = {}\n", currentChar);
+            TokenSet::Illegal(t);
+        }
+    } while ((t.type == Token::Whitespace) or (t.type == Token::Comment));
+
+    t.str = buf;
+
+    return t;
+}
+
+Lexer::FSM::FSM() {
+    enum Indexes {
+        Start, // NOT ATUAL INDEX! uses only to start enum from 1
+        IllegalIdx,
+        WhitespaceIdx,
+        LineCommentIdx,
+        IdentifierIdx,
+        NumberIdx,
+        NumberWithoutDotIdx,
+        PlusIdx,
+        MinusIdx,
+        MultiplyIdx,
+        DivideIdx,
+        CommaIdx,
+        SemicolonIdx,
+        LParenIdx,
+        RParenIdx,
+        LCurlyIdx,
+        RCurlyIdx,
+
+        // Keyword section:
+        // extern
+        K_e,
+        K_e_x,
+        K_ex_t,
+        K_ext_e,
+        K_exte_r,
+        K_exter_n,
+        // def
+        K_d,
+        K_d_e,
+        K_de_f,
+
+        Amount // NOT ATUAL INDEX! uses only to count amount of indexes
+    };
+
+    constexpr int MaxIdx = static_cast<int>(Amount);
+    constexpr int KeywordStartIdx = static_cast<int>(K_e);
+    fmt::print("MaxIdx = {}\n", MaxIdx);
+    fmt::print("KeywordStartIdx = {}\n", KeywordStartIdx);
+
+    states = new State[MaxIdx + 1];
+
+    // Illegal
+    for (int c = 0; c <= 255; c++) {
+        states[0].actions[(uint8_t)c] = IllegalIdx;
     }
+    states[IllegalIdx].TS = TokenSet::Illegal;
 
-    switch(LastChar) {
-    case '+':
-    case '-':
-        token.operatorStr = LastChar;
-        LastChar = ReadNextChar();
-        token.tokenId = tok_operator_1;
-        return token;
-    case '*':
-    case '/':
-    case '%':
-        token.operatorStr = LastChar;
-        LastChar = ReadNextChar();
-        token.tokenId = tok_operator_2;
-        return token;
-    default:
-        break;
+    // Whitespace
+    states[0].actions[(uint8_t)' '] = WhitespaceIdx;
+    states[0].actions[(uint8_t)'\n'] = WhitespaceIdx;
+    states[0].actions[(uint8_t)'\r'] = WhitespaceIdx;
+    states[0].actions[(uint8_t)'\t'] = WhitespaceIdx;
+    states[WhitespaceIdx].actions[(uint8_t)' '] = WhitespaceIdx;
+    states[WhitespaceIdx].actions[(uint8_t)'\n'] = WhitespaceIdx;
+    states[WhitespaceIdx].actions[(uint8_t)'\r'] = WhitespaceIdx;
+    states[WhitespaceIdx].actions[(uint8_t)'\t'] = WhitespaceIdx;
+    states[WhitespaceIdx].TS = TokenSet::Whitespace;
+
+    // Comment
+    states[0].actions[(uint8_t)'#'] = LineCommentIdx;
+    for (int c = 0; c <= 255; c++) {
+        states[LineCommentIdx].actions[(uint8_t)c] = LineCommentIdx;
     }
+    states[LineCommentIdx].actions[(uint8_t)'\n'] = 0;
+    states[LineCommentIdx].actions[(uint8_t)'\r'] = 0;
+    states[LineCommentIdx].TS = TokenSet::LineComment;
 
-    if (LastChar == '#') {
-        // Comment until end of line.
-        do
-            LastChar = ReadNextChar();
-        while (LastChar != EOF && LastChar != '\n' && LastChar != '\r');
-
-        if (LastChar != EOF) return GetToken();
+    // Identifier
+    for (char c = 'a'; c <= 'z'; c++) {
+        states[0].actions[(uint8_t)c] = IdentifierIdx;
+        states[IdentifierIdx].actions[(uint8_t)c] = IdentifierIdx;
+        for (int s = KeywordStartIdx; s <= MaxIdx; s++) {
+            states[s].actions[(uint8_t)c] = IdentifierIdx;
+            states[s].TS = TokenSet::Identifier;
+        }
     }
-
-    // Check for end of file.  Don't eat the EOF.
-    if (LastChar == EOF) {
-        token.tokenId = tok_eof;
-        return token;
+    for (char c = 'A'; c <= 'Z'; c++) {
+        states[0].actions[(uint8_t)c] = IdentifierIdx;
+        states[IdentifierIdx].actions[(uint8_t)c] = IdentifierIdx;
+        for (int s = KeywordStartIdx; s <= MaxIdx; s++) {
+            states[s].actions[(uint8_t)c] = IdentifierIdx;
+            states[s].TS = TokenSet::Identifier;
+        }
     }
+    for (char c = '0'; c <= '9'; c++) {
+        states[0].actions[(uint8_t)c] = IdentifierIdx;
+        states[IdentifierIdx].actions[(uint8_t)c] = IdentifierIdx;
+        for (int s = KeywordStartIdx; s <= MaxIdx; s++) {
+            states[s].actions[(uint8_t)c] = IdentifierIdx;
+            states[s].TS = TokenSet::Identifier;
+        }
+    }
+    states[IdentifierIdx].TS = TokenSet::Identifier;
 
-    // Otherwise, just return the character as its ascii value.
-    token.tokenId = LastChar;
-    LastChar = ReadNextChar();
-    return token;
+    // Number
+    for (char i = '0'; i <= '9'; i++) {
+        states[0].actions[(uint8_t)i] = NumberIdx;
+        states[NumberIdx].actions[(uint8_t)i] = NumberIdx;
+    }
+    states[NumberIdx].actions[(uint8_t)'.'] = NumberWithoutDotIdx;
+    states[NumberIdx].TS = TokenSet::Number;
+
+    for (char i = '0'; i <= '9'; i++) {
+        states[NumberWithoutDotIdx]
+            .actions[(uint8_t)i] = NumberWithoutDotIdx;
+    }
+    states[NumberWithoutDotIdx].TS = TokenSet::Number;
+
+    // Operator
+    states[0].actions[(uint8_t)'+'] = PlusIdx;
+    states[PlusIdx].TS = TokenSet::Plus;
+
+    states[0].actions[(uint8_t)'-'] = MinusIdx;
+    states[MinusIdx].TS = TokenSet::Minus;
+
+    states[0].actions[(uint8_t)'*'] = MultiplyIdx;
+    states[MultiplyIdx].TS = TokenSet::Multiply;
+
+    states[0].actions[(uint8_t)'/'] = DivideIdx;
+    states[DivideIdx].TS = TokenSet::Divide;
+
+    // Separator
+    states[0].actions[(uint8_t)','] = CommaIdx;
+    states[CommaIdx].TS = TokenSet::Comma;
+
+    states[0].actions[(uint8_t)';'] = SemicolonIdx;
+    states[SemicolonIdx].TS = TokenSet::Semicolon;
+
+    states[0].actions[(uint8_t)'('] = LParenIdx;
+    states[LParenIdx].TS = TokenSet::LParen;
+
+    states[0].actions[(uint8_t)')'] = RParenIdx;
+    states[RParenIdx].TS = TokenSet::RParen;
+
+    states[0].actions[(uint8_t)'{'] = LCurlyIdx;
+    states[LCurlyIdx].TS = TokenSet::LCurly;
+
+    states[0].actions[(uint8_t)'}'] = RCurlyIdx;
+    states[RCurlyIdx].TS = TokenSet::RCurly;
+
+    // Keyword
+    //extern
+    states[0].actions[(uint8_t)'e'] = K_e;
+    states[K_e].actions[(uint8_t)'x'] = K_e_x;
+    states[K_e_x].actions[(uint8_t)'t'] = K_ex_t;
+    states[K_ex_t].actions[(uint8_t)'e'] = K_ext_e;
+    states[K_ext_e].actions[(uint8_t)'r'] = K_exte_r;
+    states[K_exte_r].actions[(uint8_t)'n'] = K_exter_n;
+    states[K_exter_n].TS = TokenSet::Def;
+    //def
+    states[0].actions[(uint8_t)'d'] = K_d;
+    states[K_d].actions[(uint8_t)'e'] = K_d_e;
+    states[K_d_e].actions[(uint8_t)'f'] = K_de_f;
+    states[K_de_f].TS = TokenSet::Def;
+}
+
+Lexer::FSM::~FSM() {
+    delete[] states;
 }
