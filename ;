@@ -176,25 +176,22 @@ bool CodeGenerator::GenPrototype() {
         paramsStack.pop();
     }
 
-    prototypesStack.push(F);
+    valuesStack.push(F);
     return true;
 }
 
 bool CodeGenerator::GenFunction() {
-    if (prototypesStack.empty()) {
-        fmt::print("GenFunction called but prototypesStack empty!\n");
+    if (valuesStack.empty()) {
+        fmt::print("GenFunction called but valuesStack empty!\n");
         return false;
     }
-    llvm::Function* Prototype = prototypesStack.top();
-    prototypesStack.pop();
-
     // Transfer ownership of the prototype to the FunctionProtos map, but keep a
     // reference to it for use below.
     auto &P = *Prototype;
     FunctionProtos[Prototype->getName()] = std::move(Prototype);
-    std::string name(P.getName());
-    llvm::Function *TheFunction = getFunction(name);
-    if (!TheFunction) return false;
+    llvm::Function *TheFunction = getFunction(P.getName());
+    if (!TheFunction)
+        return nullptr;
 
     // Create a new basic block to start insertion into.
     llvm::BasicBlock *BB = llvm::BasicBlock::Create(*TheContext, "entry", TheFunction);
@@ -205,16 +202,9 @@ bool CodeGenerator::GenFunction() {
     for (auto &Arg : TheFunction->args())
         NamedValues[std::string(Arg.getName())] = &Arg;
 
-    if (valuesStack.empty()) {
-        fmt::print("GenFunction called but valuesStack empty!\n");
-        return false;
-    }
-    llvm::Value* retVal = valuesStack.top();
-    valuesStack.pop();
-
-    if (retVal) {
+    if (llvm::Value *RetVal = Body->codegen()) {
         // Finish off the function.
-        Builder->CreateRet(retVal);
+        Builder->CreateRet(RetVal);
 
         // Validate the generated code, checking for consistency.
         verifyFunction(*TheFunction);
@@ -222,13 +212,13 @@ bool CodeGenerator::GenFunction() {
         // Optimize the function.
         TheFPM->run(*TheFunction);
 
-        functionsStack.push(TheFunction);
-        return true;
+        return TheFunction;
     }
 
     // Error reading body, remove function.
     TheFunction->eraseFromParent();
-    return false;
+    return nullptr;
+    return true;
 }
 
 bool CodeGenerator::GenAnonFunction() {
@@ -237,20 +227,4 @@ bool CodeGenerator::GenAnonFunction() {
 
 bool CodeGenerator::GenExtern() {
     return true;
-}
-
-llvm::Function *CodeGenerator::getFunction(std::string name) {
-    // First, see if the function has already been added to the current module.
-    if (auto *F = TheModule->getFunction(name))
-        return F;
-
-    // If not, check whether we can codegen the declaration from some existing
-    // prototype.
-    auto FI = FunctionProtos.find(name);
-    if (FI != FunctionProtos.end()) {
-        return FI->second->codegen();
-    }
-
-    // If no existing prototype exists, return null.
-    return nullptr;
 }

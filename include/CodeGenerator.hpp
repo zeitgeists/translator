@@ -47,11 +47,13 @@ public:
 private:
     llvm::Function *getFunction(std::string name);
 
-    std::queue<Token> termsQueue;
-    std::queue<Token> operatorsQueue;
-    std::stack<llvm::Value*> paramsStack;
-    std::stack<llvm::Value*> argsStack;
+    std::stack<Token> termsStack;
+    std::stack<Token> operatorsStack;
+    std::stack<Token> paramsStack;
+    std::vector<llvm::Value*> argsV;
     std::stack<llvm::Value*> valuesStack;
+    std::stack<llvm::Function*> prototypesStack;
+    std::stack<llvm::Function*> functionsStack;
 
     std::unique_ptr<llvm::LLVMContext> TheContext;
     std::unique_ptr<llvm::IRBuilder<>> Builder;
@@ -60,6 +62,5 @@ private:
     std::unique_ptr<llvm::legacy::FunctionPassManager> TheFPM;
     std::unique_ptr<llvm::orc::MyCustomJIT> TheJIT;
     llvm::ExitOnError ExitOnErr;
-
-    std::map<std::string, std::unique_ptr<llvm::Function>> FunctionProtos;
+    std::map<llvm::StringRef, llvm::Function*> FunctionProtos;
 };
