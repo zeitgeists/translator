@@ -15,7 +15,7 @@ e/1
 <TOP> ::= <DEFINITION>/9
 <TOP> ::= <EXPRESSION>/10+genAnonFunction
 
-<EXTERNAL>   ::= {Extern}/11 <PROTOTYPE>/12+genExternal
+<EXTERNAL>   ::= {Extern}/11 <PROTOTYPE>/12+genExtern
 <DEFINITION> ::= {Def}/13 <PROTOTYPE>/14 <EXPRSSION>/15+genFunction
 
 <PROTOTYPE>  ::= {Identifier}/16+pushStr {LParen}/17 <PARAM_LIST>/18 {RParen}/19
