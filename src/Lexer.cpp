@@ -238,7 +238,7 @@ Lexer::FSM::FSM() {
     states[K_ex_t].actions[(uint8_t)'e'] = K_ext_e;
     states[K_ext_e].actions[(uint8_t)'r'] = K_exte_r;
     states[K_exte_r].actions[(uint8_t)'n'] = K_exter_n;
-    states[K_exter_n].TS = TokenSet::Def;
+    states[K_exter_n].TS = TokenSet::Extern;
     //def
     states[0].actions[(uint8_t)'d'] = K_d;
     states[K_d].actions[(uint8_t)'e'] = K_d_e;
