@@ -5,18 +5,20 @@ program:
 e/1
 
 <S>    ::= <BODY>/2 {Eof}/3
+
 <BODY> ::= <TOP>/4 {Semicolon}/5 <BODY_TAIL>/6
 <BODY> ::= e
 
 <BODY_TAIL> ::= <BODY>/7
 <BODY_TAIL> ::= e
 
-<TOP> ::= <EXTERNAL>/8
-<TOP> ::= <DEFINITION>/9
-<TOP> ::= <EXPRESSION>/10+genAnonFunction
+<TOP> ::= {Extern}/8 <EXTERNAL>/9
+<TOP> ::= {Def}/10 <DEFINITION>/11
+<TOP> ::= <EXPRESSION>/12+genAnonFunction
 
-<EXTERNAL>   ::= {Extern}/11 <PROTOTYPE>/12+genExtern
-<DEFINITION> ::= {Def}/13 <PROTOTYPE>/14 <EXPRSSION>/15+genFunction
+<EXTERNAL>   ::= <PROTOTYPE>/13+genExtern
+
+<DEFINITION> ::= <PROTOTYPE>/14 <EXPRSSION>/15+genFunction
 
 <PROTOTYPE>  ::= {Identifier}/16+pushStr {LParen}/17 <PARAM_LIST>/18 {RParen}/19
 
@@ -41,17 +43,18 @@ e/1
 <NEGATION> ::= <TERM>/36
 <NEGATION> ::= {Minus}/37+pushOperator <TERM>/38+genNegation
 
-<TERM> ::= {Identifier}/39+pushStr+genVariable
-<TERM> ::= {Number}/40+pushStr+genNumber
-<TERM> ::= {LParen}/41 <EXPRESSION>/42 {RParen}/43
-<TERM> ::= <FUNCTION_CALL>/44
+<TERM> ::= {Identifier}/39+pushStr <ID_OR_CALL>/40
+<TERM> ::= {Number}/41+pushStr+genNumber
+<TERM> ::= {LParen}/42 <EXPRESSION>/43 {RParen}/44
 
-<OPERATOR_1> ::= {Plus}/45+pushOperator
-<OPERATOR_1> ::= {Minus}/46+pushOperator
-<OPERATOR_2> ::= {Multiply}/47+pushOperator
-<OPERATOR_2> ::= {Divide}/48+pushOperator
+<ID_OR_CALL> ::= {LParen}/45 <ARG_LIST>/46 {RParen}/47+genCall
+<ID_OR_CALL> ::= e/48+genVariable
 
-<FUNCTION_CALL> ::= {Identifier}/49+pushStr {LParen}/50 <ARG_LIST>/51 {RParen}/52+genCall
+<OPERATOR_1> ::= {Plus}/49+pushOperator
+<OPERATOR_1> ::= {Minus}/50+pushOperator
+
+<OPERATOR_2> ::= {Multiply}/51+pushOperator
+<OPERATOR_2> ::= {Divide}/52+pushOperator
 
 <ARG_LIST> ::= <EXPRESSION>/53+pushArg <ARG_LIST_TAIL>/54
 <ARG_LIST> ::= e
