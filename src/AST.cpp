@@ -12,13 +12,6 @@ llvm::Value* NumberExprAST::codegen() {
     return llvm::ConstantFP::get(*TheContext, llvm::APFloat(Val));
 }
 
-void NumberExprAST::ToStdOut(const std::string& prefix, bool isLeft) {
-    std::cout << prefix;
-    std::cout <<  (isLeft ? "├──" : "└──");
-
-    std::cout << this->Val << std::endl;
-}
-
 VariableExprAST::VariableExprAST(const std::string &Name) : Name(Name) {
 }
 
@@ -26,13 +19,6 @@ llvm::Value* VariableExprAST::codegen() {
     llvm::Value *V = NamedValues[Name];
     if (!V) return Logger::LogErrorV("Unknown variable name " + Name);
     return V;
-}
-
-void VariableExprAST::ToStdOut(const std::string& prefix, bool isLeft) {
-    std::cout << prefix;
-    std::cout <<  (isLeft ? "├──" : "└──");
-
-    std::cout << this->Name << std::endl;
 }
 
 OperatorAST::OperatorAST(std::string Operator, std::unique_ptr<ExprAST> LHS,
@@ -57,16 +43,6 @@ llvm::Value* OperatorAST::codegen() {
     }
 }
 
-void OperatorAST::ToStdOut(const std::string& prefix, bool isLeft) {
-    std::cout << prefix;
-    std::cout <<  (isLeft ? "├──" : "└──");
-
-    std::cout << this->Operator << std::endl;
-
-    LHS->ToStdOut(prefix + (isLeft ? "│   " : "    "), true);
-    RHS->ToStdOut(prefix + (isLeft ? "│   " : "    "), false);
-}
-
 CallExprAST::CallExprAST(const std::string &Callee,
                         std::unique_ptr<std::vector<std::unique_ptr<ExprAST>>> Args)
     : Callee(Callee), Args(std::move(Args)) {
@@ -87,21 +63,6 @@ llvm::Value* CallExprAST::codegen() {
         if (!ArgsV.back()) return nullptr;
     }
     return Builder->CreateCall(CalleeF, ArgsV, "calltmp");
-}
-
-void CallExprAST::ToStdOut(const std::string& prefix, bool isLeft) {
-    std::string tmpPrefix = prefix;
-    std::cout << tmpPrefix;
-    std::cout <<  (isLeft ? "├──" : "└──");
-
-    std::cout << this->Callee
-        << " (function call)" << std::endl;
-
-    int currentAmount = 0;
-    for(auto it = Args->begin(); it != Args->end(); it++, currentAmount++) {
-        (*it)->ToStdOut(tmpPrefix + (isLeft ? "│   " : "    "),
-                (currentAmount != Args->size() - 1) ? true : false);
-    }
 }
 
 PrototypeAST::PrototypeAST(const std::string &Name,
@@ -125,23 +86,6 @@ llvm::Function* PrototypeAST::codegen() {
 
     return F;
 }
-
-void PrototypeAST::ToStdOut(const std::string& prefix, bool isLeft) {
-    std::cout << prefix;
-    std::cout <<  (isLeft ? "├──" : "└──");
-
-    std::cout << this->Name << std::endl;
-
-    int currentAmount = 0;
-    for(auto it = Args->begin(); it != Args->end(); it++, currentAmount++) {
-        std::cout << prefix << (isLeft ? "│   " : "    ")
-            << (isLeft ? "├──" : "└──") << *it << std::endl;
-        // (*it)->ToStdOut(tmpPrefix + (isLeft ? "│   " : "    "),
-        //         (currentAmount != Args->size()) ? true : false);
-    }
-}
-
-const std::string &PrototypeAST::getName() const { return Name; }
 
 FunctionAST::FunctionAST(std::unique_ptr<PrototypeAST> Prototype,
                         std::unique_ptr<ExprAST> Body)
@@ -181,24 +125,6 @@ llvm::Function* FunctionAST::codegen() {
     // Error reading body, remove function.
     TheFunction->eraseFromParent();
     return nullptr;
-}
-
-void FunctionAST::ToStdOut(const std::string& prefix, bool isLeft) {
-    std::cout << prefix;
-    std::cout <<  (isLeft ? "├──" : "└──");
-
-    std::cout << this->Prototype->getName()
-        << " (function declaration)" << std::endl;
-
-    std::cout << prefix << (isLeft ? "│   " : "    ")
-        << "├──" << "(arguments)" << std::endl;
-    Prototype->ToStdOut(prefix + "    │   " , false);
-
-
-    std::cout << prefix << (isLeft ? "│   " : "    ")
-        << "└──" << "(body)" << std::endl;
-    Body->ToStdOut(prefix + "        ", false);
-
 }
 
 void AST::InitializeModuleAndFPM() {

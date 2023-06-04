@@ -59,6 +59,8 @@ void Parser::ParseLoop() {
             whereIsNext.pop();
         }
     } while (currentState->next != 0);
+
+    fsm.codeGen.PrintGeneratedCode();
 }
 
 bool Parser::isCurrentTokenExpected() {
@@ -76,7 +78,7 @@ bool Parser::isCurrentTokenExpected() {
 }
 
 Parser::FSM::FSM() {
-    states = new State[58];
+    states = new State[66];
 
     states[ 0] = { {},  0, false,  0,  -1 };
     states[ 1] = { {}, -1, false,  0,  -1 };
@@ -90,10 +92,10 @@ Parser::FSM::FSM() {
     states[ 9] = { {}, 13, false,  0,  -1 };
     states[10] = { {}, 11,  true,  0,  12 };
     states[11] = { {}, 14, false,  0,  -1 };
-    states[12] = { {}, 25, false,  0,  -1 };
-    states[13] = { {}, 16, false,  0,  -1 };
+    states[12] = { {}, 25, false, 58,  -1 };
+    states[13] = { {}, 16, false, 59,  -1 };
     states[14] = { {}, 16, false, 15,  -1 };
-    states[15] = { {}, 25, false,  0,  -1 };
+    states[15] = { {}, 25, false, 60,  -1 };
     states[16] = { {}, 17,  true,  0,  -1 };
     states[17] = { {}, 18,  true,  0,  -1 };
     states[18] = { {}, 20, false, 19,  -1 };
@@ -107,16 +109,16 @@ Parser::FSM::FSM() {
     states[26] = { {}, 31, false, 27,  -1 };
     states[27] = { {}, 28, false,  0,  -1 };
     states[28] = { {}, 49, false, 29,   1 };
-    states[29] = { {}, 31, false, 30,  -1 };
+    states[29] = { {}, 31, false, 61,  -1 };
     states[30] = { {}, 28, false,  0,  -1 };
     states[31] = { {}, 36, false, 32,  -1 };
     states[32] = { {}, 33, false,  0,  -1 };
     states[33] = { {}, 51, false, 34,   1 };
-    states[34] = { {}, 36, false, 35,  -1 };
+    states[34] = { {}, 36, false, 62,  -1 };
     states[35] = { {}, 33, false,  0,  -1 };
     states[36] = { {}, 39, false,  0,  37 };
     states[37] = { {}, 38,  true,  0,  -1 };
-    states[38] = { {}, 39, false,  0,  -1 };
+    states[38] = { {}, 39, false, 63,  -1 };
     states[39] = { {}, 40,  true,  0,  41 };
     states[40] = { {}, 45, false,  0,  -1 };
     states[41] = { {}, -1,  true,  0,  42 };
@@ -131,11 +133,19 @@ Parser::FSM::FSM() {
     states[50] = { {}, -1,  true,  0,  51 };
     states[51] = { {}, -1,  true,  0,  52 };
     states[52] = { {}, -1,  true,  0,  -1 };
-    states[53] = { {}, 25, false, 54,   1 };
+    states[53] = { {}, 25, false, 64,   1 };
     states[54] = { {}, 55, false,  0,  -1 };
     states[55] = { {}, 56,  true,  0,   1 };
-    states[56] = { {}, 25, false, 57,  -1 };
+    states[56] = { {}, 25, false, 65,  -1 };
     states[57] = { {}, 55, false,  0,  -1 };
+    states[58] = { {}, -1, false,  0,  -1 };
+    states[59] = { {}, -1, false,  0,  -1 };
+    states[60] = { {}, -1, false,  0,  -1 };
+    states[61] = { {}, 30, false,  0,  -1 };
+    states[62] = { {}, 35, false,  0,  -1 };
+    states[63] = { {}, -1, false,  0,  -1 };
+    states[64] = { {}, 54, false,  0,  -1 };
+    states[65] = { {}, 57, false,  0,  -1 };
 
     states[ 3].expectedTokens.push_back({ Token::Eof, Token::None });
     states[ 4].expectedTokens.push_back({ Token::Keyword, Token::Extern });
@@ -193,15 +203,15 @@ Parser::FSM::FSM() {
     states[50].PushToken = [this](Token t) { codeGen.PushOperator(t); };
     states[51].PushToken = [this](Token t) { codeGen.PushOperator(t); };
     states[52].PushToken = [this](Token t) { codeGen.PushOperator(t); };
-    states[53].PushToken = [this](Token t) { codeGen.PushArg(t); };
-    states[56].PushToken = [this](Token t) { codeGen.PushArg(t); };
+    states[64].PushToken = [this](Token t) { codeGen.PushArg(t); };
+    states[65].PushToken = [this](Token t) { codeGen.PushArg(t); };
 
-    states[12].CG = [this]() -> bool { return codeGen.GenAnonFunction(); };
-    states[13].CG = [this]() -> bool { return codeGen.GenExtern(); };
-    states[15].CG = [this]() -> bool { return codeGen.GenFunction(); };
-    states[29].CG = [this]() -> bool { return codeGen.GenOperator(); };
-    states[34].CG = [this]() -> bool { return codeGen.GenOperator(); };
-    states[38].CG = [this]() -> bool { return codeGen.GenNegation(); };
+    states[58].CG = [this]() -> bool { return codeGen.GenAnonFunction(); };
+    states[59].CG = [this]() -> bool { return codeGen.GenExtern(); };
+    states[60].CG = [this]() -> bool { return codeGen.GenDef(); };
+    states[61].CG = [this]() -> bool { return codeGen.GenOperator(); };
+    states[62].CG = [this]() -> bool { return codeGen.GenOperator(); };
+    states[63].CG = [this]() -> bool { return codeGen.GenNegation(); };
     states[41].CG = [this]() -> bool { return codeGen.GenNumber(); };
     states[47].CG = [this]() -> bool { return codeGen.GenCall(); };
     states[48].CG = [this]() -> bool { return codeGen.GenVariable(); };

@@ -2,7 +2,10 @@
 
 CodeGenerator::CodeGenerator() {
     TheJIT = ExitOnErr(llvm::orc::MyCustomJIT::Create());
+    InitializeModuleAndFPM();
+}
 
+void CodeGenerator::InitializeModuleAndFPM() {
     // Open a new context and module.
     TheContext = std::make_unique<llvm::LLVMContext>();
     TheModule = std::make_unique<llvm::Module>("JIT module", *TheContext);
@@ -35,10 +38,17 @@ void CodeGenerator::PushOperator(Token t) {
 }
 
 void CodeGenerator::PushParam(Token t) {
-    // paramsStack.push(std::move(t));
+    paramsStack.push(std::move(t));
 }
 
 void CodeGenerator::PushArg(Token t) {
+    if (valuesStack.empty()) {
+        fmt::print("PushArg called but valuesStack is empty!\n");
+        return;
+    }
+    llvm::Value *V = valuesStack.top();
+    valuesStack.pop();
+    argsV.push_back(std::move(V));
 }
 
 bool CodeGenerator::GenVariable() {
@@ -82,9 +92,9 @@ bool CodeGenerator::GenOperator() {
         return false;
     }
     llvm::Value *R = valuesStack.top();
-    termsStack.pop();
+    valuesStack.pop();
     llvm::Value *L = valuesStack.top();
-    termsStack.pop();
+    valuesStack.pop();
     if (!L || !R) return false;
 
     if (operatorsStack.empty()) {
@@ -146,55 +156,64 @@ bool CodeGenerator::GenCall() {
         return false;
     }
 
-    llvm::Value* V = Builder->CreateCall(CalleeF, argsV, "calltmp");
+    std::vector<llvm::Value*> args(argsV.size());
+    for (auto it = argsV.begin(); it != argsV.end(); it++) {
+        args.push_back(*it);
+        argsV.pop_back();
+    }
+
+    llvm::Value* V = Builder->CreateCall(CalleeF, args, "calltmp");
     if (!V) return false;
 
     valuesStack.push(V);
     return true;
 }
 
-bool CodeGenerator::GenPrototype() {
+llvm::Function* CodeGenerator::GenPrototype() {
     if (termsStack.empty()) {
         fmt::print("GenPrototype called but termsStack empty!\n");
-        return false;
+        return nullptr;
     }
     std::string name = termsStack.top().str;
     termsStack.pop();
+
+    // TODO: maybe this is obsolete
+    auto Pr = FunctionProtos.find(name);
+    if (Pr != FunctionProtos.end()) {
+        return nullptr;
+    }
+
     // Make the function type:  double(double,double) etc.
     std::vector<llvm::Type*> Doubles(paramsStack.size(), llvm::Type::getDoubleTy(*TheContext));
     llvm::FunctionType *FT =
         llvm::FunctionType::get(llvm::Type::getDoubleTy(*TheContext), Doubles, false);
 
-    llvm::Function *F =
+    llvm::Function *P =
         llvm::Function::Create(FT, llvm::Function::ExternalLinkage, name, TheModule.get());
 
-    if (!F) return false;
+    if (!P) return nullptr;
 
     // Set names for all arguments.
-    for (auto &Arg : F->args()) {
+    for (auto &Arg : P->args()) {
         Arg.setName(paramsStack.top().str);
         paramsStack.pop();
     }
 
-    prototypesStack.push(F);
-    return true;
+    FunctionProtos[P->getName()] = std::move(P);
+    return P;
 }
 
-bool CodeGenerator::GenFunction() {
-    if (prototypesStack.empty()) {
-        fmt::print("GenFunction called but prototypesStack empty!\n");
-        return false;
+llvm::Function* CodeGenerator::GenFunction() {
+    if (termsStack.empty()) {
+        fmt::print("GenFunction called but termsStack empty!\n");
+        return nullptr;
     }
-    llvm::Function* Prototype = prototypesStack.top();
-    prototypesStack.pop();
+    std::string name = termsStack.top().str;
 
-    // Transfer ownership of the prototype to the FunctionProtos map, but keep a
-    // reference to it for use below.
-    auto &P = *Prototype;
-    FunctionProtos[Prototype->getName()] = std::move(Prototype);
-    std::string name(P.getName());
+    GenPrototype();
+
     llvm::Function *TheFunction = getFunction(name);
-    if (!TheFunction) return false;
+    if (!TheFunction) return nullptr;
 
     // Create a new basic block to start insertion into.
     llvm::BasicBlock *BB = llvm::BasicBlock::Create(*TheContext, "entry", TheFunction);
@@ -207,7 +226,7 @@ bool CodeGenerator::GenFunction() {
 
     if (valuesStack.empty()) {
         fmt::print("GenFunction called but valuesStack empty!\n");
-        return false;
+        return nullptr;
     }
     llvm::Value* retVal = valuesStack.top();
     valuesStack.pop();
@@ -222,20 +241,59 @@ bool CodeGenerator::GenFunction() {
         // Optimize the function.
         TheFPM->run(*TheFunction);
 
-        functionsStack.push(TheFunction);
-        return true;
+        return TheFunction;
     }
 
     // Error reading body, remove function.
     TheFunction->eraseFromParent();
-    return false;
+    return nullptr;
 }
 
 bool CodeGenerator::GenAnonFunction() {
+    // Evaluate a top-level expression into an anonymous function.
+    Token functionIdentifier;
+    TokenSet::Identifier(functionIdentifier);
+    functionIdentifier.str = "__anonymous_expr";
+    PushStr(functionIdentifier);
+    if (!GenFunction()) return false;
+
+    // Create a ResourceTracker to track JIT'd memory allocated to our
+    // anonymous expression -- that way we can free it after executing.
+    auto RT = TheJIT->getMainJITDylib().createResourceTracker();
+
+    auto TSM = llvm::orc::ThreadSafeModule(std::move(TheModule),
+                                           std::move(TheContext));
+    ExitOnErr(TheJIT->addModule(std::move(TSM), RT));
+    InitializeModuleAndFPM();
+
+    // Search the JIT for the __anonymous_expr symbol.
+    auto ExprSymbol = ExitOnErr(TheJIT->lookup("__anonymous_expr"));
+
+    // Get the symbol's address and cast it to the right type (takes no
+    // arguments, returns a double) so we can call it as a native function.
+    double (*FP)() = (double (*)())(intptr_t)ExprSymbol.getAddress();
+    fprintf(stderr, "Evaluated to %f\n", FP());
+
+    // Delete the anonymous expression module from the JIT.
+    ExitOnErr(RT->remove());
     return true;
 }
 
 bool CodeGenerator::GenExtern() {
+    auto P = GenPrototype();
+    if (!P) return false;
+    fprintf(stderr, "Read extern:\n");
+    P->print(llvm::errs());
+    fprintf(stderr, "\n");
+    FunctionProtos[P->getName()] = std::move(P);
+    return true;
+}
+bool CodeGenerator::GenDef() {
+    if (!GenFunction()) return false;
+    fprintf(stderr, "Read function definition\n");
+    ExitOnErr(TheJIT->addModule(llvm::orc::ThreadSafeModule(
+        std::move(TheModule), std::move(TheContext))));
+    InitializeModuleAndFPM();
     return true;
 }
 
@@ -248,9 +306,17 @@ llvm::Function *CodeGenerator::getFunction(std::string name) {
     // prototype.
     auto FI = FunctionProtos.find(name);
     if (FI != FunctionProtos.end()) {
-        return FI->second->codegen();
+        // Token functionIdentifier;
+        // TokenSet::Identifier(functionIdentifier);
+        // functionIdentifier.str = name;
+        // PushStr(functionIdentifier);
+        return FI->second;
     }
 
     // If no existing prototype exists, return null.
     return nullptr;
+}
+
+void CodeGenerator::PrintGeneratedCode() {
+    TheModule->print(llvm::errs(), nullptr);
 }

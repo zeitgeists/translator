@@ -14,11 +14,11 @@ e/1
 
 <TOP> ::= {Extern}/8 <EXTERNAL>/9
 <TOP> ::= {Def}/10 <DEFINITION>/11
-<TOP> ::= <EXPRESSION>/12+genAnonFunction
+<TOP> ::= <EXPRESSION>/12 /58+genAnonFunction
 
-<EXTERNAL>   ::= <PROTOTYPE>/13+genExtern
+<EXTERNAL>   ::= <PROTOTYPE>/13 /59+genExtern
 
-<DEFINITION> ::= <PROTOTYPE>/14 <EXPRSSION>/15+genFunction
+<DEFINITION> ::= <PROTOTYPE>/14 <EXPRSSION>/15 /60+genDef
 
 <PROTOTYPE>  ::= {Identifier}/16+pushStr {LParen}/17 <PARAM_LIST>/18 {RParen}/19
 
@@ -32,16 +32,16 @@ e/1
 
 <OP_1_LIST> ::= <OP_2_LIST>/26 <OP_1_LIST_TAIL>/27
 
-<OP_1_LIST_TAIL> ::= <OPERATOR_1>/28 <OP_2_LIST>/29+genOperation <OP_1_LIST_TAIL>/30
+<OP_1_LIST_TAIL> ::= <OPERATOR_1>/28 <OP_2_LIST>/29 /61+genOperation <OP_1_LIST_TAIL>/30
 <OP_1_LIST_TAIL> ::= e
 
 <OP_2_LIST> ::= <NEGATION>/31 <OP_2_LIST_TAIL>/32
 
-<OP_2_LIST_TAIL> ::= <OPERATOR_2>/33 <NEGATION>/34+genOperation <OP_2_LIST_TAIL>/35
+<OP_2_LIST_TAIL> ::= <OPERATOR_2>/33 <NEGATION>/34 /62+genOperation <OP_2_LIST_TAIL>/35
 <OP_2_LIST_TAIL> ::= e
 
 <NEGATION> ::= <TERM>/36
-<NEGATION> ::= {Minus}/37+pushOperator <TERM>/38+genNegation
+<NEGATION> ::= {Minus}/37+pushOperator <TERM>/38 /63+genNegation
 
 <TERM> ::= {Identifier}/39+pushStr <ID_OR_CALL>/40
 <TERM> ::= {Number}/41+pushStr+genNumber
@@ -56,8 +56,8 @@ e/1
 <OPERATOR_2> ::= {Multiply}/51+pushOperator
 <OPERATOR_2> ::= {Divide}/52+pushOperator
 
-<ARG_LIST> ::= <EXPRESSION>/53+pushArg <ARG_LIST_TAIL>/54
+<ARG_LIST> ::= <EXPRESSION>/53 /64+pushArg <ARG_LIST_TAIL>/54
 <ARG_LIST> ::= e
 
-<ARG_LIST_TAIL> ::= {Comma}/55 <EXPRESSION>/56+pushArg <ARG_LIST_TAIL>/57
+<ARG_LIST_TAIL> ::= {Comma}/55 <EXPRESSION>/56 /65+pushArg <ARG_LIST_TAIL>/57
 <ARG_LIST_TAIL> ::= e

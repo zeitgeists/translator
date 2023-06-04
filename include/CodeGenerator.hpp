@@ -40,20 +40,23 @@ public:
     bool GenNegation();
     bool GenOperator();
     bool GenCall();
-    bool GenPrototype();
-    bool GenFunction();
     bool GenAnonFunction();
     bool GenExtern();
+    bool GenDef();
+
+    void PrintGeneratedCode();
 private:
     llvm::Function *getFunction(std::string name);
+    void InitializeModuleAndFPM();
+
+    llvm::Function* GenPrototype();
+    llvm::Function* GenFunction();
 
     std::stack<Token> termsStack;
     std::stack<Token> operatorsStack;
     std::stack<Token> paramsStack;
     std::vector<llvm::Value*> argsV;
     std::stack<llvm::Value*> valuesStack;
-    std::stack<llvm::Function*> prototypesStack;
-    std::stack<llvm::Function*> functionsStack;
 
     std::unique_ptr<llvm::LLVMContext> TheContext;
     std::unique_ptr<llvm::IRBuilder<>> Builder;
