@@ -42,8 +42,8 @@ public:
     Token (const Token&);
     Token& operator= (const Token&);
 
-    std::string typeToStr();
-    std::string subtypeToStr();
+    std::string typeToStr() const;
+    std::string subtypeToStr() const;
 };
 
 namespace TokenSet {

@@ -25,7 +25,7 @@ Token& Token::operator=(const Token& t) {
     return *this;
 }
 
-std::string Token::typeToStr() {
+std::string Token::typeToStr() const {
     std::string str;
     switch (this->type) {
     case Eof:
@@ -59,7 +59,7 @@ std::string Token::typeToStr() {
     return str;
 }
 
-std::string Token::subtypeToStr() {
+std::string Token::subtypeToStr() const {
     std::string str;
     switch (this->subtype) {
     case Extern:
