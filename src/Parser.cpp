@@ -175,7 +175,7 @@ Parser::FSM::FSM() {
 
 
     states[10].CG = [this]() -> bool { return codeGen.GenAnonFunction();};
-    states[12].CG = [this]() -> bool { return codeGen.GenExten();       };
+    states[12].CG = [this]() -> bool { return codeGen.GenExtern();       };
     states[15].CG = [this]() -> bool { return codeGen.GenFunction();    };
     states[29].CG = [this]() -> bool { return codeGen.GenOperator();    };
     states[34].CG = [this]() -> bool { return codeGen.GenOperator();    };

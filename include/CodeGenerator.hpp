@@ -43,7 +43,7 @@ public:
     bool GenPrototype();
     bool GenFunction();
     bool GenAnonFunction();
-    bool GenExten();
+    bool GenExtern();
 private:
     llvm::Function *getFunction(std::string name);
 

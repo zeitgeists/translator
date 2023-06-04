@@ -70,3 +70,7 @@ bool CodeGenerator::GenFunction() {
 bool CodeGenerator::GenAnonFunction() {
     return true;
 }
+
+bool CodeGenerator::GenExtern() {
+    return true;
+}
