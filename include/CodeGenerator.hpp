@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <map>
+#include <array>
 
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/STLExtras.h"
@@ -43,14 +44,15 @@ public:
     bool GenAnonFunction();
     bool GenExtern();
     bool GenDef();
+    bool GenPrototype();
 
     void PrintGeneratedCode();
 private:
-    llvm::Function *getFunction(std::string name);
+    static llvm::Function *getFunction(std::string name);
     void InitializeModuleAndFPM();
 
-    llvm::Function* GenPrototype();
     llvm::Function* GenFunction();
+    std::string lastProtoName;
 
     std::stack<Token> termsStack;
     std::stack<Token> operatorsStack;
@@ -58,12 +60,91 @@ private:
     std::vector<llvm::Value*> argsV;
     std::stack<llvm::Value*> valuesStack;
 
-    std::unique_ptr<llvm::LLVMContext> TheContext;
-    std::unique_ptr<llvm::IRBuilder<>> Builder;
-    std::unique_ptr<llvm::Module> TheModule;
-    std::map<std::string, llvm::Value*> NamedValues;
-    std::unique_ptr<llvm::legacy::FunctionPassManager> TheFPM;
-    std::unique_ptr<llvm::orc::MyCustomJIT> TheJIT;
-    llvm::ExitOnError ExitOnErr;
-    std::map<llvm::StringRef, llvm::Function*> FunctionProtos;
+    static std::unique_ptr<llvm::LLVMContext> TheContext;
+    static std::unique_ptr<llvm::IRBuilder<>> Builder;
+    static std::unique_ptr<llvm::Module> TheModule;
+    static std::map<std::string, llvm::Value*> NamedValues;
+    static std::unique_ptr<llvm::legacy::FunctionPassManager> TheFPM;
+    static std::unique_ptr<llvm::orc::MyCustomJIT> TheJIT;
+    static llvm::ExitOnError ExitOnErr;
+
+    // ExprAST - Base class for all expression nodes.
+    class ExprAST {
+    public:
+        virtual void ToStdOut(const std::string& prefix, bool isLeft);
+        virtual llvm::Value *codegen() = 0;
+        virtual ~ExprAST() = default;
+    };
+
+    // NumberExprAST - Expression class for numeric literals like "1.0".
+    class NumberExprAST : public ExprAST {
+        double Val;
+
+    public:
+        explicit NumberExprAST(double Val);
+        void ToStdOut(const std::string& prefix, bool isLeft) override;
+        llvm::Value* codegen() override;
+    };
+
+    // VariableExprAST - Expression class for referencing a variable, like "a".
+    class VariableExprAST : public ExprAST {
+        std::string Name;
+
+    public:
+        explicit VariableExprAST(const std::string &Name);
+        void ToStdOut(const std::string& prefix, bool isLeft) override;
+        llvm::Value* codegen() override;
+    };
+
+    class OperatorAST : public ExprAST {
+        Token Operator;
+        std::unique_ptr<ExprAST> LHS, RHS;
+
+    public:
+        OperatorAST(std::string Operator, std::unique_ptr<ExprAST> LHS,
+                    std::unique_ptr<ExprAST> RHS);
+        void ToStdOut(const std::string& prefix, bool isLeft) override;
+        llvm::Value* codegen() override;
+    };
+
+    // CallExprAST - Expression class for function calls.
+    class CallExprAST : public ExprAST {
+        std::string Callee;
+        std::unique_ptr<std::vector<std::unique_ptr<ExprAST>>> Args;
+
+    public:
+        CallExprAST(const std::string &Callee,
+                    std::unique_ptr<std::vector<std::unique_ptr<ExprAST>>> Args);
+        llvm::Value* codegen() override;
+        void ToStdOut(const std::string& prefix, bool isLeft) override;
+    };
+
+    // PrototypeAST - This class represents the "prototype" for a function,
+    // which captures its name, and its argument names
+    class PrototypeAST {
+        std::string Name;
+        std::unique_ptr<std::vector<std::string>> Args;
+
+    public:
+        PrototypeAST(const std::string &Name,
+                std::unique_ptr<std::vector<std::string>> Args);
+        llvm::Function* codegen();
+        void ToStdOut(const std::string& prefix, bool isLeft);
+
+        const std::string &getName() const;
+    };
+
+    // FunctionAST - This class represents a function definition itself.
+    class FunctionAST {
+        std::unique_ptr<PrototypeAST> Prototype;
+        std::unique_ptr<ExprAST> Body;
+
+    public:
+        FunctionAST(std::unique_ptr<PrototypeAST> Prototype,
+            std::unique_ptr<ExprAST> Body);
+        llvm::Function* codegen();
+        void ToStdOut(const std::string& prefix, bool isLeft);
+    };
+
+    static std::map<llvm::StringRef, std::unique_ptr<PrototypeAST>> FunctionProtos;
 };
