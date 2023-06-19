@@ -44,30 +44,10 @@ public:
     bool GenAnonFunction();
     bool GenExtern();
     bool GenDef();
-    bool GenPrototype();
 
     void PrintGeneratedCode();
+
 private:
-    static llvm::Function *getFunction(std::string name);
-    void InitializeModuleAndFPM();
-
-    llvm::Function* GenFunction();
-    std::string lastProtoName;
-
-    std::stack<Token> termsStack;
-    std::stack<Token> operatorsStack;
-    std::stack<Token> paramsStack;
-    std::vector<llvm::Value*> argsV;
-    std::stack<llvm::Value*> valuesStack;
-
-    static std::unique_ptr<llvm::LLVMContext> TheContext;
-    static std::unique_ptr<llvm::IRBuilder<>> Builder;
-    static std::unique_ptr<llvm::Module> TheModule;
-    static std::map<std::string, llvm::Value*> NamedValues;
-    static std::unique_ptr<llvm::legacy::FunctionPassManager> TheFPM;
-    static std::unique_ptr<llvm::orc::MyCustomJIT> TheJIT;
-    static llvm::ExitOnError ExitOnErr;
-
     // ExprAST - Base class for all expression nodes.
     class ExprAST {
     public:
@@ -101,7 +81,7 @@ private:
         std::unique_ptr<ExprAST> LHS, RHS;
 
     public:
-        OperatorAST(std::string Operator, std::unique_ptr<ExprAST> LHS,
+        OperatorAST(Token Operator, std::unique_ptr<ExprAST> LHS,
                     std::unique_ptr<ExprAST> RHS);
         void ToStdOut(const std::string& prefix, bool isLeft) override;
         llvm::Value* codegen() override;
@@ -145,6 +125,30 @@ private:
         llvm::Function* codegen();
         void ToStdOut(const std::string& prefix, bool isLeft);
     };
+
+    static llvm::Function *getFunction(std::string name);
+    void InitializeModuleAndFPM();
+
+    std::unique_ptr<PrototypeAST> GenPrototype();
+    std::unique_ptr<FunctionAST> GenFunction(std::unique_ptr<PrototypeAST>);
+
+    std::stack<Token> termsStack;
+    std::stack<Token> operatorsStack;
+    // std::stack<Token> paramsStack;
+    // std::stack<Token> argsStack;
+    std::unique_ptr<std::vector<std::string>> paramsV;
+    std::unique_ptr<std::vector<std::unique_ptr<ExprAST>>> argsV;
+    // std::vector<llvm::Value*> argsV;
+    // std::stack<llvm::Value*> valuesStack;
+    std::stack<std::unique_ptr<ExprAST>> exprASTStack;
+
+    static std::unique_ptr<llvm::LLVMContext> TheContext;
+    static std::unique_ptr<llvm::IRBuilder<>> Builder;
+    static std::unique_ptr<llvm::Module> TheModule;
+    static std::map<std::string, llvm::Value*> NamedValues;
+    static std::unique_ptr<llvm::legacy::FunctionPassManager> TheFPM;
+    static std::unique_ptr<llvm::orc::MyCustomJIT> TheJIT;
+    static llvm::ExitOnError ExitOnErr;
 
     static std::map<llvm::StringRef, std::unique_ptr<PrototypeAST>> FunctionProtos;
 };

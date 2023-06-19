@@ -20,7 +20,7 @@ e/1
 
 <DEFINITION> ::= <PROTOTYPE>/14 <EXPRSSION>/15 /60+genDef
 
-<PROTOTYPE>  ::= {Identifier}/16+pushStr {LParen}/17 <PARAM_LIST>/18 {RParen}/19 /66+genPrototype
+<PROTOTYPE>  ::= {Identifier}/16+pushStr {LParen}/17 <PARAM_LIST>/18 {RParen}/19
 
 <PARAM_LIST> ::= {Identifier}/20+pushParam <PARAM_LIST_TAIL>/21
 <PARAM_LIST> ::= e

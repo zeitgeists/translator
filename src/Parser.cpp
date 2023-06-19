@@ -78,7 +78,7 @@ bool Parser::isCurrentTokenExpected() {
 }
 
 Parser::FSM::FSM() {
-    states = new State[67];
+    states = new State[66];
 
     states[ 0] = { {},  0, false,  0,  -1 };
     states[ 1] = { {}, -1, false,  0,  -1 };
@@ -99,7 +99,7 @@ Parser::FSM::FSM() {
     states[16] = { {}, 17,  true,  0,  -1 };
     states[17] = { {}, 18,  true,  0,  -1 };
     states[18] = { {}, 20, false, 19,  -1 };
-    states[19] = { {}, 66,  true,  0,  -1 };
+    states[19] = { {}, -1,  true,  0,  -1 };
     states[20] = { {}, 21,  true,  0,   1 };
     states[21] = { {}, 22, false,  0,  -1 };
     states[22] = { {}, 23,  true,  0,   1 };
@@ -146,7 +146,6 @@ Parser::FSM::FSM() {
     states[63] = { {}, -1, false,  0,  -1 };
     states[64] = { {}, 54, false,  0,  -1 };
     states[65] = { {}, 57, false,  0,  -1 };
-    states[66] = { {}, -1, false,  0,  -1 };
 
     states[ 3].expectedTokens.push_back({ Token::Eof, Token::None });
     states[ 4].expectedTokens.push_back({ Token::Keyword, Token::Extern });
@@ -207,7 +206,6 @@ Parser::FSM::FSM() {
     states[64].PushToken = [this](Token t) { codeGen.PushArg(t); };
     states[65].PushToken = [this](Token t) { codeGen.PushArg(t); };
 
-    states[66].CG = [this]() -> bool { return codeGen.GenPrototype(); };
     states[58].CG = [this]() -> bool { return codeGen.GenAnonFunction(); };
     states[59].CG = [this]() -> bool { return codeGen.GenExtern(); };
     states[60].CG = [this]() -> bool { return codeGen.GenDef(); };
