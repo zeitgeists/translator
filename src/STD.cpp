@@ -1,15 +1,13 @@
-#ifdef DONOTBUILD
 #include "STD.hpp"
 
 extern "C" DLLEXPORT double graph(double min, double max, double step, double n) {
     constexpr char fileName[] = {"data.csv"};
-    std::string functionName =  fmt::format("{}{:.0f}", "func", n);
+    std::string functionName =  fmt::format("{}{:.0f}", "buildGraph", n);
 
-    auto Result = TheJIT->lookup(functionName);
+    auto Result = CodeGenerator::TheJIT->lookup(functionName);
     if (auto E = Result.takeError()) {
-        Logger::LogError(
-           std::format("function 'graph' called but {} function was not found",
-           functionName));
+        fmt::print("function 'graph' called but {} function was not found",
+           functionName);
         return -1;
     }
     double (*FP)(double) = (double (*)(double))(intptr_t)Result->getAddress();
@@ -22,11 +20,9 @@ extern "C" DLLEXPORT double graph(double min, double max, double step, double n)
         }
         out.close();
     } catch (const std::system_error& e) {
-        Logger::LogError(fmt::format("Error {}, meaning {}",
-            e.code(), e.what()));
+        fmt::print("Error {}, meaning {}", e.code(), e.what());
         return -2;
     }
 
     return 0;
 }
-#endif

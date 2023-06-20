@@ -147,8 +147,10 @@ private:
     static std::unique_ptr<llvm::Module> TheModule;
     static std::map<std::string, llvm::Value*> NamedValues;
     static std::unique_ptr<llvm::legacy::FunctionPassManager> TheFPM;
-    static std::unique_ptr<llvm::orc::MyCustomJIT> TheJIT;
     static llvm::ExitOnError ExitOnErr;
 
     static std::map<llvm::StringRef, std::unique_ptr<PrototypeAST>> FunctionProtos;
+
+public:
+    static std::unique_ptr<llvm::orc::MyCustomJIT> TheJIT;
 };
