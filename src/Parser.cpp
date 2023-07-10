@@ -8,9 +8,9 @@ void Parser::ParseLoop() {
     currentToken = lexer->GetToken();
 
     do {
-        fmt::print("State: {} ", static_cast<int>(currentState - fsm.states));
-        fmt::print("Operating Token [{}, {}, '{}']\n",
-            currentToken.typeToStr(), currentToken.subtypeToStr(), currentToken.str); // DEBUG
+        // fmt::print("State: {} ", static_cast<int>(currentState - fsm.states));
+        // fmt::print("Operating Token [{}, {}, '{}']\n",
+        //     currentToken.typeToStr(), currentToken.subtypeToStr(), currentToken.str); // DEBUG
 
         if (!isCurrentTokenExpected()) {
             if (currentState->error > -1) {
@@ -35,7 +35,7 @@ void Parser::ParseLoop() {
         if (currentState->CG != nullptr) {
             bool successCodeGen = currentState->CG();
             if (!successCodeGen) {
-                fmt::print("Error in generating cocde\n");
+                fmt::print("Error in generating code\n");
                 return;
             }
         }

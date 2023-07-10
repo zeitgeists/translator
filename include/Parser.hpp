@@ -6,7 +6,6 @@
 #include "Token.hpp"
 #include "Lexer.hpp"
 #include "CodeGenerator.hpp"
-// #include "AST.hpp"
 
 class Parser {
 public:

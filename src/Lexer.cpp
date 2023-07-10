@@ -126,8 +126,6 @@ Lexer::FSM::FSM() {
 
     constexpr int MaxIdx = static_cast<int>(Amount);
     constexpr int KeywordStartIdx = static_cast<int>(K_e);
-    fmt::print("MaxIdx = {}\n", MaxIdx);
-    fmt::print("KeywordStartIdx = {}\n", KeywordStartIdx);
 
     states = new State[MaxIdx + 1];
 

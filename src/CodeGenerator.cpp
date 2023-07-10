@@ -98,13 +98,13 @@ bool CodeGenerator::GenOperator() {
         fmt::print("GenOperator called but exprASTStack size < 2!\n");
         return false;
     }
-    fmt::print("GenOperator trying std::move(exprASTStack.top())\n"); // DEBUG
+    // fmt::print("GenOperator trying std::move(exprASTStack.top())\n"); // DEBUG
     std::unique_ptr<ExprAST> R = std::move(exprASTStack.top());
     exprASTStack.pop();
     std::unique_ptr<ExprAST> L = std::move(exprASTStack.top());
     exprASTStack.pop();
     if (!L || !R) return false;
-    fmt::print("GenOperator successfull std::move(exprASTStack.top())\n"); // DEBUG
+    // fmt::print("GenOperator successfull std::move(exprASTStack.top())\n"); // DEBUG
 
     if (operatorsStack.empty()) {
         fmt::print("GenOperator called but operatorsStack empty!\n");
@@ -125,7 +125,6 @@ bool CodeGenerator::GenOperator() {
 }
 
 bool CodeGenerator::GenCall() {
-    fmt::print("Generating call\n");
     if (termsStack.empty()) {
         fmt::print("GenCall called but termsStack empty!\n");
         return false;
@@ -166,7 +165,6 @@ std::unique_ptr<CodeGenerator::FunctionAST>  CodeGenerator::GenFunction(
     std::unique_ptr<ExprAST> E = std::move(exprASTStack.top());
     exprASTStack.pop();
     if (!E) return nullptr;
-    E->ToStdOut("", false);
 
     return std::make_unique<FunctionAST>(std::move(ProtoAST), std::move(E));
 }
@@ -177,15 +175,15 @@ bool CodeGenerator::GenAnonFunction() {
     TokenSet::Identifier(functionIdentifier);
     functionIdentifier.str = "__anonymous_expr";
     PushStr(functionIdentifier);
-    fmt::print("GenAnonFunction: generating prototype\n"); // DEBUG
+    // fmt::print("GenAnonFunction: generating prototype\n"); // DEBUG
     if (auto ProtoAST = GenPrototype()) {
-        fmt::print("GenAnonFunction: generated prototype\n"); // DEBUG
+        // fmt::print("GenAnonFunction: generated prototype\n"); // DEBUG
         // ProtoAST->ToStdOut("", false); // DEBUG
-        fmt::print("GenAnonFunction: generating function\n"); // DEBUG
+        // fmt::print("GenAnonFunction: generating function\n"); // DEBUG
         if (auto FnAST = GenFunction(std::move(ProtoAST))) {
             if (auto *FnIR = FnAST->codegen()) {
-                fmt::print("GenAnonFunction: generated function\n"); // DEBUG
-                fmt::print("function name: {}\n", FnIR->getName());
+                // fmt::print("GenAnonFunction: generated function\n"); // DEBUG
+                // fmt::print("function name: {}\n", FnIR->getName());
 
                 // Create a ResourceTracker to track JIT'd memory allocated to our
                 // anonymous expression -- that way we can free it after executing.
@@ -216,9 +214,9 @@ bool CodeGenerator::GenAnonFunction() {
 bool CodeGenerator::GenExtern() {
     if (auto ProtoAST = GenPrototype()) {
         if (auto *FnIR = ProtoAST->codegen()) {
-            fprintf(stderr, "Read extern:\n");
+            // fprintf(stderr, "Read extern:\n");
             // ProtoAST->ToStdOut("", false);
-            FnIR->print(llvm::errs());
+            // FnIR->print(llvm::errs());
             fprintf(stderr, "\n");
             FunctionProtos[ProtoAST->getName()] = std::move(ProtoAST);
             return true;
@@ -231,9 +229,9 @@ bool CodeGenerator::GenDef() {
     if (auto ProtoAST = GenPrototype()) {
         if (auto FnAST = GenFunction(std::move(ProtoAST))) {
             if (auto *FnIR = FnAST->codegen()) {
-                fprintf(stderr, "Read function definition:\n");
+                // fprintf(stderr, "Read function definition:\n");
                 // FnAST->ToStdOut("", false);
-                FnIR->print(llvm::errs());
+                // FnIR->print(llvm::errs());
                 fprintf(stderr, "\n");
                 ExitOnErr(TheJIT->addModule(llvm::orc::ThreadSafeModule(
                     std::move(TheModule), std::move(TheContext))));
@@ -328,7 +326,7 @@ CodeGenerator::PrototypeAST::PrototypeAST(const std::string &Name,
 llvm::Function* CodeGenerator::PrototypeAST::codegen() {
     // Make the function type:  double(double,double) etc.
     if (!Args) {
-        fmt::print("ARGS NULL!!!!\n"); //DEBUG
+        // fmt::print("ARGS NULL!!!!\n"); //DEBUG
         return nullptr;
     }
     std::vector<llvm::Type*> Doubles(Args->size(), llvm::Type::getDoubleTy(*TheContext));
